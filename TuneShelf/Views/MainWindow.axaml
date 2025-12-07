@@ -3,26 +3,76 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:TuneShelf.ViewModels"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="TuneShelf.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
+        mc:Ignorable="d"
+        d:DesignWidth="900"
+        d:DesignHeight="600"
         Icon="/Assets/avalonia-logo.ico"
         Title="{Binding Title}">
 
     <Design.DataContext>
-        <vm:MainWindowViewModel/>
+        <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*" Margin="10">
-        <TextBlock Text="{Binding Title}"
+    <Grid RowDefinitions="Auto,Auto,Auto,*"
+          Margin="10">
+
+        <TextBlock Grid.Row="0"
+                   Text="{Binding Title}"
                    FontSize="20"
                    FontWeight="Bold"
-                   Margin="0,0,0,10"/>
-        
-        <DataGrid Grid.Row="1"
-                  ItemsSource="{Binding Tracks}"
-                  AutoGenerateColumns="True"
-                  IsReadOnly="True" />
-    </Grid>
+                   Margin="0,0,0,10" />
 
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    Spacing="8">
+            <TextBox Width="180"
+                     Watermark="Title"
+                     Text="{Binding NewTrackTitle, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Width="140"
+                     Watermark="Genre"
+                     Text="{Binding NewTrackGenre, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Width="100"
+                     Watermark="Duration (s)"
+                     Text="{Binding NewTrackDurationSeconds, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Width="100"
+                     Watermark="Rating"
+                     Text="{Binding NewTrackRating, UpdateSourceTrigger=PropertyChanged}" />
+            <Button Content="Add track"
+                    Command="{Binding AddTrackCommand}"
+                    Margin="10,0,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    Margin="0,10,0,0">
+            <TextBox Width="180"
+                     Watermark="Edit Title"
+                     Text="{Binding EditTrackTitle, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Width="140"
+                     Watermark="Edit Genre"
+                     Text="{Binding EditTrackGenre, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Width="100"
+                     Watermark="Edit Duration (s)"
+                     Text="{Binding EditTrackDurationSeconds, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Width="100"
+                     Watermark="Edit Rating"
+                     Text="{Binding EditTrackRating, UpdateSourceTrigger=PropertyChanged}" />
+            <Button Content="Update selected"
+                    Command="{Binding UpdateTrackCommand}"
+                    Margin="10,0,0,0" />
+            <Button Content="Delete selected"
+                    Command="{Binding DeleteTrackCommand}"
+                    Margin="5,0,0,0" />
+        </StackPanel>
+
+        <DataGrid Grid.Row="3"
+                  ItemsSource="{Binding Tracks}"
+                  SelectedItem="{Binding SelectedTrack, Mode=TwoWay}"
+                  AutoGenerateColumns="True"
+                  IsReadOnly="True"
+                  Margin="0,10,0,0" />
+    </Grid>
 </Window>
