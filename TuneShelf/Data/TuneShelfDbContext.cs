@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using Microsoft.EntityFrameworkCore;
 using TuneShelf.Models;
 
@@ -5,18 +7,22 @@ namespace TuneShelf.Data;
 
 public class TuneShelfDbContext : DbContext
 {
+    protected override void OnConfiguring(
+        DbContextOptionsBuilder optionsBuilder
+    )
+    {
+        var dbPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "tuneshelf.db");
+        
+        optionsBuilder.UseSqlite($"Data Source={dbPath}");
+    }
+    
     public DbSet<Artist> Artists => Set<Artist>();
     public DbSet<Album> Albums => Set<Album>();
     public DbSet<Playlist> Playlists => Set<Playlist>();
     public DbSet<Track> Tracks => Set<Track>();
     public DbSet<PlaylistTrack> PlaylistTracks => Set<PlaylistTrack>();
-    
-    protected override void OnConfiguring(
-        DbContextOptionsBuilder optionsBuilder
-    )
-    {
-        optionsBuilder.UseSqlite("Data Source=tuneshelf.db");
-    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

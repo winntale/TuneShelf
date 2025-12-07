@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using TuneShelf.Models;
+using TuneShelf.Services;
 
 namespace TuneShelf.ViewModels;
 
 public sealed class MainWindowViewModel : ViewModelBase
 {
-    private string _title = "TuneShelf - Music Library";
+    private readonly LibraryService _libraryService;
+    
+    private string _title = "TuneShelf – Music Library";
     public string Title
     {
         get => _title;
@@ -22,7 +25,30 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel()
     {
-        SeedDummyData();
+        _libraryService = new LibraryService();
+
+        LoadTracks();
+    }
+
+    private void LoadTracks()
+    {
+        Tracks.Clear();
+
+        var tracks = _libraryService.GetAllTracksAsync().Result;
+
+        foreach (var track in tracks)
+        {
+            Tracks.Add(track);
+        }
+
+        if (Tracks.Count == 0)
+        {
+            Title = "TuneShelf – Music Library (empty)";
+        }
+        else
+        {
+            Title = $"TuneShelf – Music Library ({Tracks.Count} tracks)";
+        }
     }
 
     private void SeedDummyData()
