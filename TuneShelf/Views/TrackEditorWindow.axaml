@@ -1,0 +1,93 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:TuneShelf.ViewModels"
+        x:Class="TuneShelf.Views.TrackEditorWindow"
+        x:DataType="vm:TrackEditorViewModel"
+        mc:Ignorable="d"
+        Width="420"
+        Height="320"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Title="{Binding DialogTitle}">
+
+    <Design.DataContext>
+        <vm:TrackEditorViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+          Margin="12">
+
+        <!-- title -->
+        <TextBlock Grid.Row="0"
+                   Text="{Binding DialogTitle}"
+                   FontSize="16"
+                   FontWeight="Bold"
+                   Margin="0,0,0,10" />
+
+        <!-- track name -->
+        <StackPanel Grid.Row="1"
+                    Spacing="4">
+            <TextBlock Text="Title" />
+            <TextBox Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" />
+        </StackPanel>
+
+        <!-- genre + album -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    Spacing="12"
+                    Margin="0,8,0,0">
+            <StackPanel Width="180"
+                        Spacing="4">
+                <TextBlock Text="Genre" />
+                <TextBox Text="{Binding Genre, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+
+            <StackPanel Width="180"
+                        Spacing="4">
+                <TextBlock Text="Album" />
+                <ComboBox ItemsSource="{Binding Albums}"
+                          SelectedItem="{Binding SelectedAlbum, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Title}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- duration + rating -->
+        <StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    Spacing="12"
+                    Margin="0,8,0,0">
+            <StackPanel Width="180"
+                        Spacing="4">
+                <TextBlock Text="Duration (s)" />
+                <TextBox Text="{Binding DurationSeconds, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+
+            <StackPanel Width="180"
+                        Spacing="4">
+                <TextBlock Text="Rating" />
+                <TextBox Text="{Binding Rating, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- btns -->
+        <StackPanel Grid.Row="4"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="10"
+                    Margin="0,16,0,0">
+            <Button Content="Save"
+                    Width="90"
+                    Command="{Binding SaveCommand}" />
+            <Button Content="Cancel"
+                    Width="90"
+                    Command="{Binding CancelCommand}" />
+        </StackPanel>
+    </Grid>
+</Window>

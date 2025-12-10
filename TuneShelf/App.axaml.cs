@@ -9,7 +9,7 @@ using TuneShelf.Views;
 
 namespace TuneShelf;
 
-public partial class App : Application
+public partial class TuneShelfApp : Application
 {
     public override void Initialize()
     {

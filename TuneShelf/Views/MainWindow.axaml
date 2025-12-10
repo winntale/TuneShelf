@@ -6,73 +6,215 @@
         x:Class="TuneShelf.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         mc:Ignorable="d"
-        d:DesignWidth="900"
-        d:DesignHeight="600"
+        d:DesignWidth="1200"
+        d:DesignHeight="800"
+        Width="1200"
+        Height="800"
         Icon="/Assets/avalonia-logo.ico"
-        Title="{Binding Title}">
+        Title="{Binding Title}"
+        WindowStartupLocation="CenterScreen">
 
     <Design.DataContext>
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*"
-          Margin="10">
+    <Grid RowDefinitions="Auto,*" Margin="0">
+        <!-- Заголовок приложения -->
+        <Border Grid.Row="0" 
+                Background="#2D2D30" 
+                Padding="20,15"
+                BorderBrush="#3F3F46"
+                BorderThickness="0,0,0,1">
+            <TextBlock Text="{Binding Title}"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="White"
+                       VerticalAlignment="Center" />
+        </Border>
 
-        <TextBlock Grid.Row="0"
-                   Text="{Binding Title}"
-                   FontSize="20"
-                   FontWeight="Bold"
-                   Margin="0,0,0,10" />
+        <!-- Вкладки -->
+        <TabControl Grid.Row="1" 
+                    Classes="tabControl">
+            <!-- Вкладка Треки -->
+            <TabItem Header="Треки" Padding="20,10">
+                <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="20">
+                    <!-- Поиск -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="Поиск:" 
+                                   VerticalAlignment="Center"
+                                   FontSize="14"
+                                   Foreground="#E0E0E0"
+                                   Margin="0,0,10,0" />
+                        <TextBox Width="300"
+                                 Watermark="Название или жанр..."
+                                 Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                 FontSize="14" />
+                    </StackPanel>
 
-        <StackPanel Grid.Row="1"
-                    Orientation="Horizontal"
-                    Spacing="8">
-            <TextBox Width="180"
-                     Watermark="Title"
-                     Text="{Binding NewTrackTitle, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBox Width="140"
-                     Watermark="Genre"
-                     Text="{Binding NewTrackGenre, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBox Width="100"
-                     Watermark="Duration (s)"
-                     Text="{Binding NewTrackDurationSeconds, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBox Width="100"
-                     Watermark="Rating"
-                     Text="{Binding NewTrackRating, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Content="Add track"
-                    Command="{Binding AddTrackCommand}"
-                    Margin="10,0,0,0" />
-        </StackPanel>
+                    <!-- Фильтры -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="15">
+                        <TextBlock Text="Жанр:" 
+                                   VerticalAlignment="Center"
+                                   FontSize="14"
+                                   Foreground="#E0E0E0"
+                                   Margin="0,0,10,0" />
+                        <ComboBox Width="180"
+                                  ItemsSource="{Binding AvailableGenres}"
+                                  SelectedItem="{Binding SelectedGenreFilter}"
+                                  FontSize="14" />
 
-        <StackPanel Grid.Row="2"
-                    Orientation="Horizontal"
-                    Spacing="8"
-                    Margin="0,10,0,0">
-            <TextBox Width="180"
-                     Watermark="Edit Title"
-                     Text="{Binding EditTrackTitle, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBox Width="140"
-                     Watermark="Edit Genre"
-                     Text="{Binding EditTrackGenre, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBox Width="100"
-                     Watermark="Edit Duration (s)"
-                     Text="{Binding EditTrackDurationSeconds, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBox Width="100"
-                     Watermark="Edit Rating"
-                     Text="{Binding EditTrackRating, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Content="Update selected"
-                    Command="{Binding UpdateTrackCommand}"
-                    Margin="10,0,0,0" />
-            <Button Content="Delete selected"
-                    Command="{Binding DeleteTrackCommand}"
-                    Margin="5,0,0,0" />
-        </StackPanel>
+                        <TextBlock Text="Рейтинг:" 
+                                   VerticalAlignment="Center"
+                                   FontSize="14"
+                                   Foreground="#E0E0E0"
+                                   Margin="20,0,10,0" />
+                        <TextBox Width="80"
+                                 Watermark="Мин"
+                                 Text="{Binding MinRating, UpdateSourceTrigger=PropertyChanged}"
+                                 FontSize="14" />
+                        <TextBlock Text="—" 
+                                   VerticalAlignment="Center"
+                                   Margin="5,0" />
+                        <TextBox Width="80"
+                                 Watermark="Макс"
+                                 Text="{Binding MaxRating, UpdateSourceTrigger=PropertyChanged}"
+                                 FontSize="14" />
+                    </StackPanel>
 
-        <DataGrid Grid.Row="3"
-                  ItemsSource="{Binding Tracks}"
-                  SelectedItem="{Binding SelectedTrack, Mode=TwoWay}"
-                  AutoGenerateColumns="True"
-                  IsReadOnly="True"
-                  Margin="0,10,0,0" />
+                    <!-- Кнопки действий -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10">
+                        <Button Content="➕"
+                                Click="AddTrackButton_OnClick"
+                                Padding="15,8"
+                                FontSize="14"
+                                Cursor="Hand" />
+                        <Button Content="✏️"
+                                Click="EditTrackButton_OnClick"
+                                Padding="15,8"
+                                FontSize="14"
+                                Cursor="Hand" />
+                        <Button Content="🗑️"
+                                Command="{Binding DeleteTrackCommand}"
+                                Padding="15,8"
+                                FontSize="14"
+                                Cursor="Hand" />
+                    </StackPanel>
+
+                    <!-- Таблица треков -->
+                    <DataGrid Grid.Row="3"
+                              ItemsSource="{Binding Tracks}"
+                              SelectedItem="{Binding SelectedTrack, Mode=TwoWay}"
+                              AutoGenerateColumns="True"
+                              IsReadOnly="True"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column"
+                              SelectionMode="Single"
+                              CanUserReorderColumns="False"
+                              CanUserResizeColumns="True"
+                              Background="#1E1E1E"
+                              BorderBrush="#3F3F46"
+                              BorderThickness="1" />
+                </Grid>
+            </TabItem>
+
+            <!-- Вкладка Альбомы -->
+            <TabItem Header="Альбомы" Padding="20,10">
+                <Grid RowDefinitions="Auto,*" Margin="20">
+                    <!-- Кнопки действий для альбомов -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10">
+                        <Button Content="➕"
+                                Command="{Binding AlbumsVm.CreateAlbumCommand}"
+                                Padding="15,8"
+                                FontSize="14"
+                                Cursor="Hand" />
+                        <Button Content="✏️"
+                                Command="{Binding AlbumsVm.EditAlbumCommand}"
+                                Padding="15,8"
+                                FontSize="14"
+                                Cursor="Hand" />
+                        <Button Content="🗑️"
+                                Command="{Binding AlbumsVm.DeleteAlbumCommand}"
+                                Padding="15,8"
+                                FontSize="14"
+                                Cursor="Hand" />
+                        <Button Content="🔄"
+                                Command="{Binding AlbumsVm.LoadAlbumsCommand}"
+                                Padding="15,8"
+                                FontSize="14"
+                                Cursor="Hand"
+                                Margin="20,0,0,0" />
+                    </StackPanel>
+
+                    <!-- Список альбомов -->
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding AlbumsVm.Albums}"
+                              SelectedItem="{Binding AlbumsVm.SelectedAlbum, Mode=TwoWay}"
+                              AutoGenerateColumns="True"
+                              IsReadOnly="True"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column"
+                              SelectionMode="Single"
+                              CanUserReorderColumns="False"
+                              CanUserResizeColumns="True"
+                              Background="#1E1E1E"
+                              BorderBrush="#3F3F46"
+                              BorderThickness="1">
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
+
+    <Window.Styles>
+        <Style Selector="TabControl">
+            <Setter Property="Background" Value="#1E1E1E" />
+        </Style>
+        <Style Selector="TabItem">
+            <Setter Property="Background" Value="#2D2D30" />
+            <Setter Property="Foreground" Value="#E0E0E0" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="Background" Value="#007ACC" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="TabItem:pointerover">
+            <Setter Property="Background" Value="#3F3F46" />
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="Background" Value="#007ACC" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+        </Style>
+        <Style Selector="Button:pointerover">
+            <Setter Property="Background" Value="#005A9E" />
+        </Style>
+        <Style Selector="Button:disabled">
+            <Setter Property="Background" Value="#3F3F46" />
+            <Setter Property="Foreground" Value="#808080" />
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#2D2D30" />
+            <Setter Property="Foreground" Value="#E0E0E0" />
+            <Setter Property="BorderBrush" Value="#3F3F46" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,6" />
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="#2D2D30" />
+            <Setter Property="Foreground" Value="#E0E0E0" />
+            <Setter Property="BorderBrush" Value="#3F3F46" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="DataGrid">
+            <Setter Property="Foreground" Value="#E0E0E0" />
+        </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Background" Value="#2D2D30" />
+            <Setter Property="Foreground" Value="#E0E0E0" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+    </Window.Styles>
 </Window>

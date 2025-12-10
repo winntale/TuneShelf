@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using Microsoft.EntityFrameworkCore;
 using TuneShelf.Commands;
+using TuneShelf.Interfaces;
 using TuneShelf.Models;
 using TuneShelf.Services;
 
@@ -12,6 +14,8 @@ namespace TuneShelf.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private readonly LibraryService _libraryService;
+    
+    public AlbumsViewModel AlbumsVm { get; }
     
     private string _title = "TuneShelf – Music Library";
     private string _newTrackTitle = string.Empty;
@@ -24,6 +28,13 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _editTrackGenre = string.Empty;
     private int _editTrackDurationSeconds;
     private decimal _editTrackRating;
+    
+    private readonly List<Track> _allTracks = new();
+    private string _searchQuery = string.Empty;
+    
+    private decimal? _minRating;
+    private decimal? _maxRating;
+    private string? _selectedGenreFilter;
     
     public string Title
     {
@@ -147,6 +158,60 @@ public sealed class MainWindowViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
+    
+    public string SearchQuery
+    {
+        get => _searchQuery;
+        set
+        {
+            if (_searchQuery == value) return;
+            _searchQuery = value;
+            OnPropertyChanged();
+            ApplyFilter();
+        }
+    }
+    
+    public decimal? MinRating
+    {
+        get => _minRating;
+        set
+        {
+            if (_minRating == value) return;
+            _minRating = value;
+            OnPropertyChanged();
+            ApplyFilter();
+        }
+    }
+
+    public decimal? MaxRating
+    {
+        get => _maxRating;
+        set
+        {
+            if (_maxRating == value) return;
+            _maxRating = value;
+            OnPropertyChanged();
+            ApplyFilter();
+        }
+    }
+    public string? SelectedGenreFilter
+    {
+        get => _selectedGenreFilter;
+        set
+        {
+            if (_selectedGenreFilter == value) return;
+            _selectedGenreFilter = value;
+            OnPropertyChanged();
+            ApplyFilter();
+        }
+    }
+    
+    public IReadOnlyList<string> AvailableGenres =>
+        _allTracks.Select(t => t.Genre)
+            .Distinct()
+            .OrderBy(g => g)
+            .Prepend("All")
+            .ToList();
 
     public ObservableCollection<Track> Tracks { get; init; } = new();
 
@@ -157,6 +222,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         _libraryService = new LibraryService();
+        var dialogService = new DialogService();
+        AlbumsVm = new AlbumsViewModel(_libraryService, dialogService);
 
         AddTrackCommand = new RelayCommand(
             async _ => await AddTrackAsync(),
@@ -171,18 +238,20 @@ public sealed class MainWindowViewModel : ViewModelBase
             _ => SelectedTrack is not null);
         
         LoadTracks();
+        
+        // Загружаем альбомы при инициализации
+        _ = AlbumsVm.LoadAsync();
     }
 
     private void LoadTracks()
     {
+        _allTracks.Clear();
         Tracks.Clear();
 
         var tracks = _libraryService.GetAllTracksAsync().Result;
+        _allTracks.AddRange(tracks);
 
-        foreach (var track in tracks)
-        {
-            Tracks.Add(track);
-        }
+        ApplyFilter();
 
         UpdateTitle();
     }
@@ -207,9 +276,9 @@ public sealed class MainWindowViewModel : ViewModelBase
         };
 
         await _libraryService.AddTrackAsync(track);
-
-        Tracks.Add(track);
-        UpdateTitle();
+        
+        _allTracks.Add(track);
+        ApplyFilter();
         
         NewTrackTitle = string.Empty;
         NewTrackGenre = string.Empty;
@@ -246,10 +315,88 @@ public sealed class MainWindowViewModel : ViewModelBase
         var id = SelectedTrack.Id;
 
         await _libraryService.DeleteTrackAsync(id);
-
-        Tracks.Remove(SelectedTrack);
-        UpdateTitle();
+        
+        _allTracks.RemoveAll(t => t.Id == id);
+        ApplyFilter();
         
         SelectedTrack = null;
     }
+    
+    private void ApplyFilter()
+    {
+        Tracks.Clear();
+
+        var query = _searchQuery?.Trim();
+        IEnumerable<Track> filtered = _allTracks;
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var q = query.ToLowerInvariant();
+            filtered = filtered.Where(t =>
+                t.Title.ToLowerInvariant().Contains(q) ||
+                t.Genre.ToLowerInvariant().Contains(q));
+        }
+
+        if (!string.IsNullOrWhiteSpace(SelectedGenreFilter) &&
+            SelectedGenreFilter != "All")
+        {
+            filtered = filtered.Where(t => t.Genre == SelectedGenreFilter);
+        }
+
+        if (MinRating is not null)
+        {
+            filtered = filtered.Where(t => t.Rating >= MinRating.Value);
+        }
+
+        if (MaxRating is not null)
+        {
+            filtered = filtered.Where(t => t.Rating <= MaxRating.Value);
+        }
+
+        foreach (var track in filtered)
+            Tracks.Add(track);
+
+        UpdateTitle();
+    }
+
+    
+    // albums
+    public async Task<List<Album>> GetAllAlbumsAsync()
+        => await _libraryService.GetAllAlbumsAsync();
+    
+    
+    // интеграция диалогового окна
+    public async Task CreateTrackFromDialogAsync(Track track)
+    {
+        track = track with
+        {
+            AlbumId = await _libraryService.GetOrCreateDefaultAlbumIdAsync()
+        };
+
+        await _libraryService.AddTrackAsync(track);
+
+        _allTracks.Add(track);
+        ApplyFilter();
+    }
+
+    public async Task UpdateTrackFromDialogAsync(Track updated)
+    {
+        await _libraryService.UpdateTrackAsync(updated);
+
+        var index = Tracks.IndexOf(SelectedTrack!);
+        if (index >= 0)
+        {
+            Tracks[index] = updated;
+            SelectedTrack = updated;
+        }
+
+        var allIndex = _allTracks.FindIndex(t => t.Id == updated.Id);
+        if (allIndex >= 0)
+        {
+            _allTracks[allIndex] = updated;
+        }
+
+        ApplyFilter();
+    }
+
 }
