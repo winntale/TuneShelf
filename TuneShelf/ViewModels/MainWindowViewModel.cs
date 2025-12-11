@@ -14,7 +14,7 @@ namespace TuneShelf.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private readonly LibraryService _libraryService;
-    
+
     public AlbumsViewModel AlbumsVm { get; }
     
     private string _title = "TuneShelf – Music Library";
@@ -35,6 +35,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     private decimal? _minRating;
     private decimal? _maxRating;
     private string? _selectedGenreFilter;
+    
+    private Album? _selectedAlbum;
+    private bool _showOnlySelectedAlbumTracks;
     
     public string Title
     {
@@ -194,6 +197,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             ApplyFilter();
         }
     }
+    
     public string? SelectedGenreFilter
     {
         get => _selectedGenreFilter;
@@ -201,6 +205,30 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             if (_selectedGenreFilter == value) return;
             _selectedGenreFilter = value;
+            OnPropertyChanged();
+            ApplyFilter();
+        }
+    }
+
+    public Album? SelectedAlbum
+    {
+        get => _selectedAlbum;
+        set
+        {
+            if (_selectedAlbum == value) return;
+            _selectedAlbum = value;
+            OnPropertyChanged();
+            ApplyFilter();
+        }
+    }
+    
+    public bool ShowOnlySelectedAlbumTracks
+    {
+        get => _showOnlySelectedAlbumTracks;
+        set
+        {
+            if (_showOnlySelectedAlbumTracks == value) return;
+            _showOnlySelectedAlbumTracks = value;
             OnPropertyChanged();
             ApplyFilter();
         }
@@ -224,6 +252,15 @@ public sealed class MainWindowViewModel : ViewModelBase
         _libraryService = new LibraryService();
         var dialogService = new DialogService();
         AlbumsVm = new AlbumsViewModel(_libraryService, dialogService);
+        SelectedAlbum = AlbumsVm.SelectedAlbum;
+        
+        AlbumsVm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(AlbumsVm.SelectedAlbum))
+            {
+                SelectedAlbum = AlbumsVm.SelectedAlbum;
+            }
+        };
 
         AddTrackCommand = new RelayCommand(
             async _ => await AddTrackAsync(),
@@ -238,8 +275,6 @@ public sealed class MainWindowViewModel : ViewModelBase
             _ => SelectedTrack is not null);
         
         LoadTracks();
-        
-        // Загружаем альбомы при инициализации
         _ = AlbumsVm.LoadAsync();
     }
 
@@ -353,6 +388,11 @@ public sealed class MainWindowViewModel : ViewModelBase
             filtered = filtered.Where(t => t.Rating <= MaxRating.Value);
         }
 
+        if (ShowOnlySelectedAlbumTracks && SelectedAlbum is not null)
+        {
+            filtered = filtered.Where(t => t.AlbumId == SelectedAlbum.Id);
+        }
+        
         foreach (var track in filtered)
             Tracks.Add(track);
 
@@ -368,11 +408,6 @@ public sealed class MainWindowViewModel : ViewModelBase
     // интеграция диалогового окна
     public async Task CreateTrackFromDialogAsync(Track track)
     {
-        track = track with
-        {
-            AlbumId = await _libraryService.GetOrCreateDefaultAlbumIdAsync()
-        };
-
         await _libraryService.AddTrackAsync(track);
 
         _allTracks.Add(track);

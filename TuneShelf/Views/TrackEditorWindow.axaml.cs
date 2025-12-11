@@ -1,5 +1,7 @@
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using TuneShelf.Models;
 using TuneShelf.ViewModels;
 
 namespace TuneShelf.Views;
@@ -12,11 +14,39 @@ public partial class TrackEditorWindow : Window
 
         if (!Design.IsDesignMode)
         {
-            if (DataContext is TrackEditorViewModel vm)
-            {
-                // Подписка на Save/Cancel через закрытие окна – проще сделать так:
-                // но у нас Save/Cancel меняют IsConfirmed/ResultTrack.
-            }
+            DataContextChanged += OnDataContextChanged;
+        }
+    }
+    
+    private void OnDataContextChanged(object? sender, System.EventArgs e)
+    {
+        if (DataContext is TrackEditorViewModel vm)
+        {
+            vm.CloseRequested += (_, _) => Close();
+        }
+    }
+    
+    private void AlbumComboBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (DataContext is TrackEditorViewModel vm && sender is ComboBox comboBox)
+        {
+            vm.SelectedAlbum = comboBox.SelectedItem as Album;
+        }
+    }
+    
+    private void SaveButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is TrackEditorViewModel vm && vm.SaveCommand.CanExecute(null))
+        {
+            vm.SaveCommand.Execute(null);
+        }
+    }
+    
+    private void CancelButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is TrackEditorViewModel vm && vm.CancelCommand.CanExecute(null))
+        {
+            vm.CancelCommand.Execute(null);
         }
     }
     

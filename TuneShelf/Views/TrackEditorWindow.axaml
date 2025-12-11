@@ -47,8 +47,10 @@
             <StackPanel Width="180"
                         Spacing="4">
                 <TextBlock Text="Album" />
-                <ComboBox ItemsSource="{Binding Albums}"
-                          SelectedItem="{Binding SelectedAlbum, Mode=TwoWay}">
+                <ComboBox x:Name="AlbumComboBox"
+                          ItemsSource="{Binding Albums}"
+                          SelectedItem="{Binding SelectedAlbum, Mode=TwoWay}"
+                          SelectionChanged="AlbumComboBox_OnSelectionChanged">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Title}" />
@@ -84,10 +86,11 @@
                     Margin="0,16,0,0">
             <Button Content="Save"
                     Width="90"
-                    Command="{Binding SaveCommand}" />
+                    Click="SaveButton_OnClick"
+                    IsEnabled="{Binding IsSaveEnabled}" />
             <Button Content="Cancel"
                     Width="90"
-                    Command="{Binding CancelCommand}" />
+                    Click="CancelButton_OnClick" />
         </StackPanel>
     </Grid>
 </Window>

@@ -79,6 +79,8 @@
                                  Watermark="Макс"
                                  Text="{Binding MaxRating, UpdateSourceTrigger=PropertyChanged}"
                                  FontSize="14" />
+                        <CheckBox Content="Show only tracks of selected album"
+                                  IsChecked="{Binding ShowOnlySelectedAlbumTracks}" />
                     </StackPanel>
 
                     <!-- Кнопки действий -->
@@ -119,9 +121,38 @@
 
             <!-- Вкладка Альбомы -->
             <TabItem Header="Альбомы" Padding="20,10">
-                <Grid RowDefinitions="Auto,*" Margin="20">
+                <Grid RowDefinitions="Auto,Auto,*" Margin="20">
+                    
+                    <StackPanel Grid.Row="0" Orientation="Vertical"
+                                Margin="12">
+
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    Margin="0,0,0,8">
+                            <TextBlock Text="Album search:"
+                                       VerticalAlignment="Center" />
+                            <TextBox Width="250"
+                                     Watermark="Title or year"
+                                     Text="{Binding AlbumsVm.AlbumSearchQuery, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+
+                        <ListBox ItemsSource="{Binding AlbumsVm.Albums}"
+                                 SelectedItem="{Binding AlbumsVm.SelectedAlbum, Mode=TwoWay}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="{Binding Title}" />
+                                        <TextBlock Text="(" />
+                                        <TextBlock Text="{Binding Year}" />
+                                        <TextBlock Text=")" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                    
                     <!-- Кнопки действий для альбомов -->
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10">
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
                         <Button Content="➕"
                                 Command="{Binding AlbumsVm.CreateAlbumCommand}"
                                 Padding="15,8"
@@ -146,7 +177,7 @@
                     </StackPanel>
 
                     <!-- Список альбомов -->
-                    <DataGrid Grid.Row="1"
+                    <DataGrid Grid.Row="2"
                               ItemsSource="{Binding AlbumsVm.Albums}"
                               SelectedItem="{Binding AlbumsVm.SelectedAlbum, Mode=TwoWay}"
                               AutoGenerateColumns="True"

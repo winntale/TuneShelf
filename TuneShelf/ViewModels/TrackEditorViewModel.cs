@@ -18,6 +18,7 @@ public sealed class TrackEditorViewModel : ViewModelBase
     private decimal _rating;
     private Album? _selectedAlbum;
 
+    public event EventHandler? CloseRequested;
 
     public string DialogTitle
     {
@@ -39,6 +40,7 @@ public sealed class TrackEditorViewModel : ViewModelBase
             _title = value;
             OnPropertyChanged();
             ((RelayCommand)SaveCommand).RaiseCanExecuteChanged();
+            OnPropertyChanged(nameof(IsSaveEnabled));
         }
     }
 
@@ -80,10 +82,11 @@ public sealed class TrackEditorViewModel : ViewModelBase
         get => _selectedAlbum;
         set
         {
-            if (_selectedAlbum == value) return;
+            // Всегда обновляем значение и уведомляем об изменении для правильной работы привязки ComboBox
             _selectedAlbum = value;
             OnPropertyChanged();
             ((RelayCommand)SaveCommand).RaiseCanExecuteChanged();
+            OnPropertyChanged(nameof(IsSaveEnabled));
         }
     }
     
@@ -92,6 +95,8 @@ public sealed class TrackEditorViewModel : ViewModelBase
 
     public ICommand SaveCommand { get; }
     public ICommand CancelCommand { get; }
+    
+    public bool IsSaveEnabled => SaveCommand?.CanExecute(null) ?? false;
 
     private readonly Track? _originalTrack;
     
@@ -151,11 +156,14 @@ public sealed class TrackEditorViewModel : ViewModelBase
                 Rating = Rating,
                 AlbumId = SelectedAlbum.Id
             };
+        
+        CloseRequested?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnCancel()
     {
         IsConfirmed = false;
         ResultTrack = null;
+        CloseRequested?.Invoke(this, EventArgs.Empty);
     }
 }

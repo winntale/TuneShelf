@@ -1,18 +1,24 @@
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using TuneShelf.Commands;
 using TuneShelf.Interfaces;
 using TuneShelf.Models;
 using TuneShelf.Services;
-using TuneShelf.ViewModels;
+
+namespace TuneShelf.ViewModels;
 
 public class AlbumsViewModel : ViewModelBase
 {
-    private readonly LibraryService _library;
+    private readonly LibraryService _libraryService;
 
     public ObservableCollection<Album> Albums { get; } = new();
     private Album? _selectedAlbum;
+    private readonly List<Album> _allAlbums = new();
+    private string _albumSearchQuery = string.Empty;
+    
     public Album? SelectedAlbum
     {
         get => _selectedAlbum;
@@ -23,6 +29,18 @@ public class AlbumsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
+    
+    public string AlbumSearchQuery
+    {
+        get => _albumSearchQuery;
+        set
+        {
+            if (_albumSearchQuery == value) return;
+            _albumSearchQuery = value;
+            OnPropertyChanged();
+            ApplyAlbumFilter();
+        }
+    }
 
     public ICommand LoadAlbumsCommand  { get; }
     public ICommand CreateAlbumCommand { get; }
@@ -31,9 +49,9 @@ public class AlbumsViewModel : ViewModelBase
 
     private readonly IDialogService _dialogService;
 
-    public AlbumsViewModel(LibraryService library, IDialogService dialogService)
+    public AlbumsViewModel(LibraryService libraryService, IDialogService dialogService)
     {
-        _library = library;
+        _libraryService = libraryService;
         _dialogService = dialogService;
         LoadAlbumsCommand  = new RelayCommand(async _ => await LoadAsync());
         CreateAlbumCommand = new RelayCommand(async _ => await CreateAsync());
@@ -43,10 +61,13 @@ public class AlbumsViewModel : ViewModelBase
 
     public async Task LoadAsync()
     {
+        _allAlbums.Clear();
         Albums.Clear();
-        var albums = await _library.GetAllAlbumsAsync();
-        foreach (var a in albums)
-            Albums.Add(a);
+
+        var albums = await _libraryService.GetAllAlbumsAsync();
+        _allAlbums.AddRange(albums);
+
+        ApplyAlbumFilter();
     }
 
     private async Task CreateAsync()
@@ -54,7 +75,7 @@ public class AlbumsViewModel : ViewModelBase
         var edited = await _dialogService.ShowAlbumEditorAsync(null);
         if (edited is null) return;
 
-        var created = await _library.CreateAlbumAsync(edited);
+        var created = await _libraryService.CreateAlbumAsync(edited);
         Albums.Add(created);
     }
 
@@ -65,7 +86,7 @@ public class AlbumsViewModel : ViewModelBase
         var edited = await _dialogService.ShowAlbumEditorAsync(SelectedAlbum);
         if (edited is null) return;
 
-        await _library.UpdateAlbumAsync(edited);
+        await _libraryService.UpdateAlbumAsync(edited);
 
         var idx = Albums.IndexOf(SelectedAlbum);
         Albums[idx] = edited;
@@ -76,7 +97,28 @@ public class AlbumsViewModel : ViewModelBase
     {
         if (SelectedAlbum is null) return;
 
-        await _library.DeleteAlbumAsync(SelectedAlbum.Id);
+        await _libraryService.DeleteAlbumAsync(SelectedAlbum.Id);
         Albums.Remove(SelectedAlbum);
     }
+    
+    private void ApplyAlbumFilter()
+    {
+        Albums.Clear();
+
+        var query = _albumSearchQuery?.Trim();
+        IEnumerable<Album> filtered = _allAlbums;
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var q = query.ToLowerInvariant();
+
+            filtered = filtered.Where(a =>
+                (!string.IsNullOrEmpty(a.Title) && a.Title.ToLowerInvariant().Contains(q)) ||
+                a.Year.ToString().Contains(q));
+        }
+
+        foreach (var album in filtered)
+            Albums.Add(album);
+    }
+
 }

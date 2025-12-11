@@ -12,62 +12,27 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
     }
-    
+
     private void InitializeComponent()
     {
         AvaloniaXamlLoader.Load(this);
     }
 
     private async void AddTrackButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        var vm = DataContext as MainWindowViewModel;
-        if (vm is null) return;
-
-        var editorVm = new TrackEditorViewModel();
-        var editorWindow = new TrackEditorWindow
-        {
-            DataContext = editorVm
-        };
-
-        var result = await editorWindow.ShowDialog<bool>(this);
-
-        if (editorVm.IsConfirmed && editorVm.ResultTrack is not null)
-        {
-            await vm.CreateTrackFromDialogAsync(editorVm.ResultTrack);
-        }
-    }
+        => await OpenCreateTrackDialogAsync();
 
     private async void EditTrackButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        var vm = DataContext as MainWindowViewModel;
-        if (vm?.SelectedTrack is null) return;
+        => await OpenEditTrackDialogAsync();
 
-        var editorVm = new TrackEditorViewModel(track: vm.SelectedTrack);
-        var editorWindow = new TrackEditorWindow
-        {
-            DataContext = editorVm
-        };
-
-        var result = await editorWindow.ShowDialog<bool>(this);
-
-        if (editorVm.IsConfirmed && editorVm.ResultTrack is not null)
-        {
-            await vm.UpdateTrackFromDialogAsync(editorVm.ResultTrack);
-        }
-    }
-    
-    
-    
     private async Task OpenCreateTrackDialogAsync()
     {
         var mainVm = (MainWindowViewModel)DataContext!;
-        var albums = await mainVm.GetAllAlbumsAsync(); // проброс к LibraryService
+        var albums = await mainVm.GetAllAlbumsAsync();
 
         var editorVm = new TrackEditorViewModel();
         foreach (var album in albums)
             editorVm.Albums.Add(album);
 
-        // По умолчанию — первый альбом (или дефолтный, если хочешь найти по названию)
         editorVm.SelectedAlbum = editorVm.Albums.FirstOrDefault();
 
         var editorWindow = new TrackEditorWindow { DataContext = editorVm };
@@ -90,10 +55,9 @@ public partial class MainWindow : Window
         foreach (var album in albums)
             editorVm.Albums.Add(album);
 
-        // Выставляем SelectedAlbum по Id трека
         editorVm.SelectedAlbum = editorVm.Albums
-                                     .FirstOrDefault(a => a.Id == mainVm.SelectedTrack.AlbumId)
-                                 ?? editorVm.Albums.FirstOrDefault();
+            .FirstOrDefault(a => a.Id == mainVm.SelectedTrack.AlbumId)
+            ?? editorVm.Albums.FirstOrDefault();
 
         var editorWindow = new TrackEditorWindow { DataContext = editorVm };
         await editorWindow.ShowDialog(this);

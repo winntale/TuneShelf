@@ -13,9 +13,6 @@ public sealed class DialogService : IDialogService
 {
     public async Task<Album?> ShowAlbumEditorAsync(Album? album)
     {
-        // Простая реализация через InputDialog или можно создать отдельное окно
-        // Для простоты используем ContentDialog или создаем простое окно
-        
         var window = new Window
         {
             Title = album is null ? "Создать альбом" : "Редактировать альбом",
@@ -53,8 +50,7 @@ public sealed class DialogService : IDialogService
             Margin = new Avalonia.Thickness(0, 0, 0, 10)
         };
         Grid.SetRow(yearBox, 1);
-
-        // Используем LibraryService для получения дефолтного ArtistId
+        
         var libraryService = new LibraryService();
         var defaultArtistId = await libraryService.GetOrCreateDefaultArtistIdAsync();
         
@@ -91,12 +87,11 @@ public sealed class DialogService : IDialogService
 
         okButton.Click += (_, _) =>
         {
-            if (string.IsNullOrWhiteSpace(titleBox.Text)) return;
-            
+            if (string.IsNullOrWhiteSpace(titleBox.Text))
+                return;
+
             if (!Guid.TryParse(artistIdBox.Text, out var artistId))
-            {
-                artistId = defaultArtistId; // Используем дефолтный
-            }
+                artistId = defaultArtistId;
 
             var result = new Album
             {
@@ -106,13 +101,17 @@ public sealed class DialogService : IDialogService
                 ArtistId = artistId
             };
 
-            tcs.SetResult(result);
+            if (!tcs.Task.IsCompleted)
+                tcs.SetResult(result);
+
             window.Close();
         };
 
         cancelButton.Click += (_, _) =>
         {
-            tcs.SetResult(null);
+            if (!tcs.Task.IsCompleted)
+                tcs.SetResult(null);
+
             window.Close();
         };
 
@@ -121,16 +120,15 @@ public sealed class DialogService : IDialogService
             if (!tcs.Task.IsCompleted)
                 tcs.SetResult(null);
         };
-
+        
         var app = Avalonia.Application.Current;
         Window? parentWindow = null;
         if (app?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             parentWindow = desktop.MainWindow;
         }
-        
-        await window.ShowDialog(parentWindow);
 
+        await window.ShowDialog(parentWindow);
         return await tcs.Task;
     }
 }
