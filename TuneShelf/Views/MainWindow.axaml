@@ -193,6 +193,46 @@
                     </DataGrid>
                 </Grid>
             </TabItem>
+            
+            <TabItem Header="Артисты" Padding="20,10">
+                <Grid RowDefinitions="Auto,Auto,*" Margin="20">
+
+                    <!-- Поиск -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                        <TextBlock Text="Поиск:" VerticalAlignment="Center" />
+                        <TextBox Width="250"
+                                 Watermark="Имя артиста..."
+                                 Text="{Binding ArtistsVm.ArtistSearchQuery, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+
+                    <!-- Кнопки -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
+                        <Button Content="➕"
+                                Command="{Binding ArtistsVm.CreateArtistCommand}"
+                                Padding="15,8" />
+                        <Button Content="✏️"
+                                Command="{Binding ArtistsVm.EditArtistCommand}"
+                                Padding="15,8" />
+                        <Button Content="🗑️"
+                                Command="{Binding ArtistsVm.DeleteArtistCommand}"
+                                Padding="15,8" />
+                        <Button Content="🔄"
+                                Command="{Binding ArtistsVm.LoadArtistsCommand}"
+                                Padding="15,8"
+                                Margin="20,0,0,0" />
+                    </StackPanel>
+
+                    <!-- Список артистов -->
+                    <DataGrid Grid.Row="2"
+                              ItemsSource="{Binding ArtistsVm.Artists}"
+                              SelectedItem="{Binding ArtistsVm.SelectedArtist, Mode=TwoWay}"
+                              AutoGenerateColumns="True"
+                              IsReadOnly="True"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column"
+                              SelectionMode="Single" />
+                </Grid>
+            </TabItem>
         </TabControl>
     </Grid>
 

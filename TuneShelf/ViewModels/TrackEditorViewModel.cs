@@ -82,7 +82,6 @@ public sealed class TrackEditorViewModel : ViewModelBase
         get => _selectedAlbum;
         set
         {
-            // Всегда обновляем значение и уведомляем об изменении для правильной работы привязки ComboBox
             _selectedAlbum = value;
             OnPropertyChanged();
             ((RelayCommand)SaveCommand).RaiseCanExecuteChanged();
@@ -96,7 +95,7 @@ public sealed class TrackEditorViewModel : ViewModelBase
     public ICommand SaveCommand { get; }
     public ICommand CancelCommand { get; }
     
-    public bool IsSaveEnabled => SaveCommand?.CanExecute(null) ?? false;
+    public bool IsSaveEnabled => SaveCommand.CanExecute(null);
 
     private readonly Track? _originalTrack;
     

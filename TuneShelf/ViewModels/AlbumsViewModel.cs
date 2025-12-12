@@ -10,10 +10,11 @@ using TuneShelf.Services;
 
 namespace TuneShelf.ViewModels;
 
-public class AlbumsViewModel : ViewModelBase
+public sealed class AlbumsViewModel : ViewModelBase
 {
     private readonly LibraryService _libraryService;
-
+    private readonly IDialogService _dialogService;
+    
     public ObservableCollection<Album> Albums { get; } = new();
     private Album? _selectedAlbum;
     private readonly List<Album> _allAlbums = new();
@@ -46,8 +47,7 @@ public class AlbumsViewModel : ViewModelBase
     public ICommand CreateAlbumCommand { get; }
     public ICommand EditAlbumCommand   { get; }
     public ICommand DeleteAlbumCommand { get; }
-
-    private readonly IDialogService _dialogService;
+    
 
     public AlbumsViewModel(LibraryService libraryService, IDialogService dialogService)
     {

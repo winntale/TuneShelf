@@ -16,6 +16,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private readonly LibraryService _libraryService;
 
     public AlbumsViewModel AlbumsVm { get; }
+    public ArtistsViewModel ArtistsVm { get; }
     
     private string _title = "TuneShelf – Music Library";
     private string _newTrackTitle = string.Empty;
@@ -252,6 +253,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         _libraryService = new LibraryService();
         var dialogService = new DialogService();
         AlbumsVm = new AlbumsViewModel(_libraryService, dialogService);
+        ArtistsVm = new ArtistsViewModel(_libraryService, dialogService);
+        
         SelectedAlbum = AlbumsVm.SelectedAlbum;
         
         AlbumsVm.PropertyChanged += (_, e) =>

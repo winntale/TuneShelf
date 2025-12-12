@@ -44,7 +44,95 @@ public sealed class LibraryService
         db.Tracks.Remove(track);
         await db.SaveChangesAsync();
     }
+    
+    
+    // ALBUMS
+    
+    public async Task<List<Album>> GetAllAlbumsAsync()
+    {
+        await using var db = new TuneShelfDbContext();
+        return await db.Albums
+            .AsNoTracking()
+            .OrderBy(a => a.Title)
+            .ToListAsync();
+    }
+    
 
+    public async Task<Album?> GetAlbumByIdAsync(Guid id)
+    {
+        await using var db = new TuneShelfDbContext();
+        return await db.Albums.FindAsync(id);
+    }
+
+    public async Task<Album> CreateAlbumAsync(Album album)
+    {
+        await using var db = new TuneShelfDbContext();
+        db.Albums.Add(album);
+        await db.SaveChangesAsync();
+        return album;
+    }
+
+    public async Task UpdateAlbumAsync(Album album)
+    {
+        await using var db = new TuneShelfDbContext();
+        db.Albums.Update(album);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task DeleteAlbumAsync(Guid id)
+    {
+        await using var db = new TuneShelfDbContext();
+        
+        var album = await db.Albums.FindAsync(id);
+        if (album is null) return;
+
+        db.Albums.Remove(album);
+        await db.SaveChangesAsync();
+    }
+    
+    
+    // ARTISTS
+    
+    public async Task<List<Artist>> GetAllArtistsAsync()
+    {
+        await using var db = new TuneShelfDbContext();
+        return await db.Artists
+            .OrderBy(a => a.Name)
+            .ToListAsync();
+    }
+
+    public async Task<Artist?> GetArtistByIdAsync(Guid id)
+    {
+        await using var db = new TuneShelfDbContext();
+        return await db.Artists.FindAsync(id);
+    }
+
+    public async Task<Artist> CreateArtistAsync(Artist artist)
+    {
+        await using var db = new TuneShelfDbContext();
+        db.Artists.Add(artist);
+        await db.SaveChangesAsync();
+        return artist;
+    }
+
+    public async Task UpdateArtistAsync(Artist artist)
+    {
+        await using var db = new TuneShelfDbContext();
+        db.Artists.Update(artist);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task DeleteArtistAsync(Guid id)
+    {
+        await using var db = new TuneShelfDbContext();
+        var artist = await db.Artists.FindAsync(id);
+        if (artist is null) return;
+
+        db.Artists.Remove(artist);
+        await db.SaveChangesAsync();
+    }
+
+    
     // DEFAULT VALUES GETTERS
     
     public async Task<Guid> GetOrCreateDefaultAlbumIdAsync()
@@ -96,50 +184,4 @@ public sealed class LibraryService
 
         return newArtist.Id;
     }
-    
-    
-    // ALBUMS
-    
-    public async Task<List<Album>> GetAllAlbumsAsync()
-    {
-        await using var db = new TuneShelfDbContext();
-        return await db.Albums
-            .AsNoTracking()
-            .OrderBy(a => a.Title)
-            .ToListAsync();
-    }
-    
-
-    public async Task<Album?> GetAlbumByIdAsync(Guid id)
-    {
-        await using var db = new TuneShelfDbContext();
-        return await db.Albums.FindAsync(id);
-    }
-
-    public async Task<Album> CreateAlbumAsync(Album album)
-    {
-        await using var db = new TuneShelfDbContext();
-        db.Albums.Add(album);
-        await db.SaveChangesAsync();
-        return album;
-    }
-
-    public async Task UpdateAlbumAsync(Album album)
-    {
-        await using var db = new TuneShelfDbContext();
-        db.Albums.Update(album);
-        await db.SaveChangesAsync();
-    }
-
-    public async Task DeleteAlbumAsync(Guid id)
-    {
-        await using var db = new TuneShelfDbContext();
-        
-        var album = await db.Albums.FindAsync(id);
-        if (album is null) return;
-
-        db.Albums.Remove(album);
-        await db.SaveChangesAsync();
-    }
-
 }
