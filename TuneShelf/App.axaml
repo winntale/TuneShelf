@@ -5,6 +5,17 @@
     <Application.DataTemplates>
         <local:ViewLocator />
     </Application.DataTemplates>
+
+    <Application.Resources>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#007ACC" />
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#121214" />
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#1E1E1E" />
+        <SolidColorBrush x:Key="PanelBrush" Color="#2D2D30" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#3F3F46" />
+        <SolidColorBrush x:Key="TextBrush" Color="#E0E0E0" />
+        <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />

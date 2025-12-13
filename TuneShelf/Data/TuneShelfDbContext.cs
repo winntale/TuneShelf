@@ -39,13 +39,16 @@ public class TuneShelfDbContext : DbContext
             .HasForeignKey(t => t.AlbumId);
 
         modelBuilder.Entity<PlaylistTrack>()
-            .HasOne<Playlist>()
-            .WithMany()
+            .HasKey(pt => new { pt.PlaylistId, pt.TrackId });
+
+        modelBuilder.Entity<PlaylistTrack>()
+            .HasOne(pt => pt.Playlist)
+            .WithMany(p => p.PlaylistTracks)
             .HasForeignKey(pt => pt.PlaylistId);
 
         modelBuilder.Entity<PlaylistTrack>()
-            .HasOne<Track>()
-            .WithMany()
+            .HasOne(pt => pt.Track)
+            .WithMany(t => t.PlaylistTracks)
             .HasForeignKey(pt => pt.TrackId);
     }
 }

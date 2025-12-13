@@ -14,10 +14,11 @@ namespace TuneShelf.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private readonly LibraryService _libraryService;
-    private readonly DialogService _dialogService;
+    private readonly IDialogService _dialogService;
 
     public AlbumsViewModel AlbumsVm { get; }
     public ArtistsViewModel ArtistsVm { get; }
+    public PlaylistsViewModel PlaylistsVm { get; }
     
     private string _title = "TuneShelf – Music Library";
     private string _newTrackTitle = string.Empty;
@@ -33,6 +34,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     
     private readonly List<Track> _allTracks = new();
     private string _searchQuery = string.Empty;
+
+    private int _selectedTabIndex = 0;
     
     private decimal? _minRating;
     private decimal? _maxRating;
@@ -48,6 +51,17 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             if (_title == value) return;
             _title = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public int SelectedTabIndex
+    {
+        get => _selectedTabIndex;
+        set
+        {
+            if (_selectedTabIndex == value) return;
+            _selectedTabIndex = value;
             OnPropertyChanged();
         }
     }
@@ -248,6 +262,11 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand AddTrackCommand { get; }
     public ICommand UpdateTrackCommand { get; }
     public ICommand DeleteTrackCommand { get; }
+    public ICommand NavigateToTracksCommand { get; }
+    public ICommand NavigateToAlbumsCommand { get; }
+    public ICommand NavigateToArtistsCommand { get; }
+    public ICommand NavigateToPlaylistsCommand { get; }
+    public ICommand RefreshAllCommand { get; }
     
     public MainWindowViewModel()
     {
@@ -255,6 +274,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         _dialogService = new DialogService();
         ArtistsVm = new ArtistsViewModel(_libraryService, _dialogService);
         AlbumsVm = new AlbumsViewModel(_libraryService, _dialogService, ArtistsVm);
+        PlaylistsVm = new PlaylistsViewModel(_libraryService, _dialogService);
         
         AlbumsVm.PropertyChanged += (_, e) =>
         {
@@ -274,10 +294,22 @@ public sealed class MainWindowViewModel : ViewModelBase
         DeleteTrackCommand = new RelayCommand(
             async _ => await DeleteSelectedTrackAsync(),
             _ => SelectedTrack is not null);
+        NavigateToTracksCommand = new RelayCommand(_ => SelectedTabIndex = 0);
+        NavigateToAlbumsCommand = new RelayCommand(_ => SelectedTabIndex = 1);
+        NavigateToArtistsCommand = new RelayCommand(_ => SelectedTabIndex = 2);
+        NavigateToPlaylistsCommand = new RelayCommand(_ => SelectedTabIndex = 3);
+        RefreshAllCommand = new RelayCommand(async _ =>
+        {
+            LoadTracks();
+            await AlbumsVm.LoadAsync();
+            await ArtistsVm.LoadArtistsAsync();
+            await PlaylistsVm.LoadPlaylistsAsync();
+        });
         
         LoadTracks();
         _ = AlbumsVm.LoadAsync();
         _ = ArtistsVm.LoadArtistsAsync();
+        _ = PlaylistsVm.LoadPlaylistsAsync();
     }
 
     private void LoadTracks()

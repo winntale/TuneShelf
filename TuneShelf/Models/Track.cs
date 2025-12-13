@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace TuneShelf.Models;
 
@@ -10,4 +11,6 @@ public sealed record Track
     public required string Genre { get; init; }
     public required decimal Rating { get; init; }
     public required Guid AlbumId { get; init; }
+    
+    public ICollection<PlaylistTrack> PlaylistTracks { get; set; } = new List<PlaylistTrack>();
 }

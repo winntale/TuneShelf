@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -16,6 +17,29 @@ public sealed class ArtistsViewModel : ViewModelBase
     private readonly IDialogService _dialogService;
 
     public ObservableCollection<Artist> Artists { get; } = new();
+    public sealed record ArtistDisplay(Artist Artist, int AlbumCount)
+    {
+        public Guid Id => Artist.Id;
+        public string Name => Artist.Name;
+        public int AlbumCount { get; } = AlbumCount;
+    }
+
+    public ObservableCollection<ArtistDisplay> ArtistsEx { get; } = new();
+
+    private ArtistDisplay? _selectedArtistDisplay;
+    public ArtistDisplay? SelectedArtistDisplay
+    {
+        get => _selectedArtistDisplay;
+        set
+        {
+            if (_selectedArtistDisplay == value) return;
+            _selectedArtistDisplay = value;
+            OnPropertyChanged();
+            SelectedArtist = value is null ? null : value.Artist;
+            ((RelayCommand)EditArtistCommand).RaiseCanExecuteChanged();
+            ((RelayCommand)DeleteArtistCommand).RaiseCanExecuteChanged();
+        }
+    }
 
     private Artist? _selectedArtist;
     public Artist? SelectedArtist
@@ -68,8 +92,19 @@ public sealed class ArtistsViewModel : ViewModelBase
         Artists.Clear();
 
         var artists = await _libraryService.GetAllArtistsAsync();
+        var albums = await _libraryService.GetAllAlbumsAsync();
+        var albumLookup = albums.GroupBy(a => a.ArtistId).ToDictionary(g => g.Key, g => g.Count());
+
         _allArtists.AddRange(artists);
-        
+
+        ArtistsEx.Clear();
+        foreach (var ar in artists)
+        {
+            var count = albumLookup.TryGetValue(ar.Id, out var c) ? c : 0;
+            ArtistsEx.Add(new ArtistDisplay(ar, count));
+            Artists.Add(ar);
+        }
+
         ApplyFilter();
     }
     
@@ -122,6 +157,10 @@ public sealed class ArtistsViewModel : ViewModelBase
     private void ApplyFilter()
     {
         Artists.Clear();
+        ArtistsEx.Clear();
+
+        var albums = _libraryService.GetAllAlbumsAsync().Result;
+        var albumLookup = albums.GroupBy(a => a.ArtistId).ToDictionary(g => g.Key, g => g.Count());
 
         var query = _artistSearchQuery?.Trim();
         IEnumerable<Artist> filtered = _allArtists;
@@ -134,7 +173,10 @@ public sealed class ArtistsViewModel : ViewModelBase
         }
 
         foreach (var artist in filtered)
+        {
             Artists.Add(artist);
+            ArtistsEx.Add(new ArtistDisplay(artist, albumLookup.TryGetValue(artist.Id, out var c) ? c : 0));
+        }
     }
 
 }

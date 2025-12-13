@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -18,6 +19,30 @@ public sealed class AlbumsViewModel : ViewModelBase
     public ArtistsViewModel ArtistsVm { get; }
     
     public ObservableCollection<Album> Albums { get; } = new();
+    public sealed record AlbumDisplay(Album Album, string ArtistName)
+    {
+        public Guid Id => Album.Id;
+        public string Title => Album.Title;
+        public int Year => Album.Year;
+        public string ArtistName { get; } = ArtistName;
+    }
+
+    public ObservableCollection<AlbumDisplay> AlbumsEx { get; } = new();
+
+    private AlbumDisplay? _selectedAlbumDisplay;
+    public AlbumDisplay? SelectedAlbumDisplay
+    {
+        get => _selectedAlbumDisplay;
+        set
+        {
+            if (_selectedAlbumDisplay == value) return;
+            _selectedAlbumDisplay = value;
+            OnPropertyChanged();
+            SelectedAlbum = value is null ? null : value.Album;
+            ((RelayCommand)EditAlbumCommand).RaiseCanExecuteChanged();
+            ((RelayCommand)DeleteAlbumCommand).RaiseCanExecuteChanged();
+        }
+    }
     private Album? _selectedAlbum;
     private readonly List<Album> _allAlbums = new();
     private string _albumSearchQuery = string.Empty;
@@ -107,27 +132,51 @@ public sealed class AlbumsViewModel : ViewModelBase
     {
         _allAlbums.Clear();
         Albums.Clear();
+        AlbumsEx.Clear();
 
         var albums = await _libraryService.GetAllAlbumsAsync();
+        var artists = await _libraryService.GetAllArtistsAsync();
+        var artistDict = artists.ToDictionary(a => a.Id, a => a.Name);
+
         _allAlbums.AddRange(albums);
+
+        AlbumsEx.Clear();
+        foreach (var a in albums)
+        {
+            AlbumsEx.Add(new AlbumDisplay(a, artistDict.TryGetValue(a.ArtistId, out var n) ? n : "Unknown"));
+            Albums.Add(a);
+        }
 
         ApplyFilter();
     }
 
     private async Task CreateAsync()
     {
-        var edited = await _dialogService.ShowAlbumEditorAsync(null);
+        var artists = await _libraryService.GetAllArtistsAsync();
+        if (artists.Count == 0)
+        {
+            await _dialogService.ShowInfoAsync("Нет исполнителей",
+                "Сначала создайте хотя бы одного исполнителя.");
+            return;
+        }
+        
+        var edited = await _dialogService.ShowAlbumEditorAsync(null, artists);
         if (edited is null) return;
 
         var created = await _libraryService.CreateAlbumAsync(edited);
         Albums.Add(created);
+        
+        ApplyFilter();
     }
 
     private async Task EditAsync()
     {
         if (SelectedAlbum is null) return;
 
-        var edited = await _dialogService.ShowAlbumEditorAsync(SelectedAlbum);
+        var artists = await _libraryService.GetAllArtistsAsync();
+        if (artists.Count == 0) return;
+        
+        var edited = await _dialogService.ShowAlbumEditorAsync(SelectedAlbum, artists);
         if (edited is null) return;
 
         await _libraryService.UpdateAlbumAsync(edited);
@@ -135,6 +184,8 @@ public sealed class AlbumsViewModel : ViewModelBase
         var idx = Albums.IndexOf(SelectedAlbum);
         Albums[idx] = edited;
         SelectedAlbum = edited;
+        
+        ApplyFilter();
     }
 
     private async Task DeleteAsync()
@@ -159,6 +210,7 @@ public sealed class AlbumsViewModel : ViewModelBase
         var previous = SelectedAlbum;
 
         Albums.Clear();
+        AlbumsEx.Clear();
 
         var query = _albumSearchQuery?.Trim();
         IEnumerable<Album> filtered = _allAlbums;
@@ -178,9 +230,15 @@ public sealed class AlbumsViewModel : ViewModelBase
             filtered = filtered.Where(a => a.ArtistId == artistId);
         }
 
+        var artists = _libraryService.GetAllArtistsAsync().Result;
+        var artistDict = artists.ToDictionary(a => a.Id, a => a.Name);
+
         foreach (var album in filtered)
+        {
             Albums.Add(album);
-        
+            AlbumsEx.Add(new AlbumDisplay(album, artistDict.TryGetValue(album.ArtistId, out var n) ? n : "Unknown"));
+        }
+
         if (previous is not null)
         {
             var match = Albums.FirstOrDefault(a => a.Id == previous.Id);
