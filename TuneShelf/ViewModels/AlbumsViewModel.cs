@@ -15,10 +15,15 @@ public sealed class AlbumsViewModel : ViewModelBase
     private readonly LibraryService _libraryService;
     private readonly IDialogService _dialogService;
     
+    public ArtistsViewModel ArtistsVm { get; }
+    
     public ObservableCollection<Album> Albums { get; } = new();
     private Album? _selectedAlbum;
     private readonly List<Album> _allAlbums = new();
     private string _albumSearchQuery = string.Empty;
+
+    private Artist? _selectedArtist;
+    private bool _showOnlySelectedArtistAlbums;
     
     public Album? SelectedAlbum
     {
@@ -28,6 +33,8 @@ public sealed class AlbumsViewModel : ViewModelBase
             if (_selectedAlbum == value) return;
             _selectedAlbum = value;
             OnPropertyChanged();
+            ((RelayCommand)EditAlbumCommand).RaiseCanExecuteChanged();
+            ((RelayCommand)DeleteAlbumCommand).RaiseCanExecuteChanged();
         }
     }
     
@@ -43,16 +50,53 @@ public sealed class AlbumsViewModel : ViewModelBase
         }
     }
 
+    public Artist? SelectedArtist
+    {
+        get => _selectedArtist;
+        set
+        {
+            if (_selectedArtist == value) return;
+            _selectedArtist = value;  
+            OnPropertyChanged();
+            ApplyAlbumFilter();
+        }
+    }
+    
+    public bool ShowOnlySelectedArtistAlbums
+    {
+        get => _showOnlySelectedArtistAlbums;
+        set
+        {
+            if (_showOnlySelectedArtistAlbums == value) return;
+            _showOnlySelectedArtistAlbums = value;
+            OnPropertyChanged();
+            ApplyAlbumFilter();
+        }
+    }
+
     public ICommand LoadAlbumsCommand  { get; }
     public ICommand CreateAlbumCommand { get; }
     public ICommand EditAlbumCommand   { get; }
     public ICommand DeleteAlbumCommand { get; }
     
 
-    public AlbumsViewModel(LibraryService libraryService, IDialogService dialogService)
+    public AlbumsViewModel(LibraryService libraryService, IDialogService dialogService, ArtistsViewModel artistsVm)
     {
         _libraryService = libraryService;
         _dialogService = dialogService;
+
+        ArtistsVm = artistsVm;
+        
+        SelectedArtist = ArtistsVm.SelectedArtist;
+
+        ArtistsVm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ArtistsVm.SelectedArtist))
+            {
+                SelectedArtist = ArtistsVm.SelectedArtist;
+            }
+        };
+        
         LoadAlbumsCommand  = new RelayCommand(async _ => await LoadAsync());
         CreateAlbumCommand = new RelayCommand(async _ => await CreateAsync());
         EditAlbumCommand   = new RelayCommand(async _ => await EditAsync(),   _ => SelectedAlbum is not null);
@@ -105,7 +149,7 @@ public sealed class AlbumsViewModel : ViewModelBase
     {
         Albums.Clear();
 
-        var query = _albumSearchQuery?.Trim();
+        var query = _albumSearchQuery.Trim();
         IEnumerable<Album> filtered = _allAlbums;
 
         if (!string.IsNullOrWhiteSpace(query))
@@ -115,6 +159,11 @@ public sealed class AlbumsViewModel : ViewModelBase
             filtered = filtered.Where(a =>
                 (!string.IsNullOrEmpty(a.Title) && a.Title.ToLowerInvariant().Contains(q)) ||
                 a.Year.ToString().Contains(q));
+        }
+        
+        if (ShowOnlySelectedArtistAlbums && SelectedArtist is not null)
+        {
+            filtered = filtered.Where(a => a.ArtistId == SelectedArtist.Id);
         }
 
         foreach (var album in filtered)

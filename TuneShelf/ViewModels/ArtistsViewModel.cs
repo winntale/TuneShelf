@@ -50,16 +50,7 @@ public sealed class ArtistsViewModel : ViewModelBase
     public ICommand CreateArtistCommand { get; }
     public ICommand EditArtistCommand   { get; }
     public ICommand DeleteArtistCommand { get; }
-
-    public ArtistsViewModel(LibraryService libraryService)
-    {
-        _libraryService      = libraryService;
-        LoadArtistsCommand   = new RelayCommand(async _ => await LoadArtistsAsync());
-        CreateArtistCommand  = new RelayCommand(async _ => await CreateArtistAsync());
-        EditArtistCommand    = new RelayCommand(async _ => await EditArtistAsync(),   _ => SelectedArtist is not null);
-        DeleteArtistCommand  = new RelayCommand(async _ => await DeleteArtistAsync(), _ => SelectedArtist is not null);
-    }
-
+    
     public ArtistsViewModel(LibraryService libraryService, IDialogService dialogService)
     {
         _libraryService = libraryService;

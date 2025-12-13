@@ -14,6 +14,7 @@ namespace TuneShelf.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private readonly LibraryService _libraryService;
+    private readonly DialogService _dialogService;
 
     public AlbumsViewModel AlbumsVm { get; }
     public ArtistsViewModel ArtistsVm { get; }
@@ -251,9 +252,10 @@ public sealed class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         _libraryService = new LibraryService();
-        var dialogService = new DialogService();
-        AlbumsVm = new AlbumsViewModel(_libraryService, dialogService);
-        ArtistsVm = new ArtistsViewModel(_libraryService, dialogService);
+        _dialogService = new DialogService();
+        ArtistsVm = new ArtistsViewModel(_libraryService, _dialogService);
+        AlbumsVm = new AlbumsViewModel(_libraryService, _dialogService, ArtistsVm);
+        
         
         SelectedAlbum = AlbumsVm.SelectedAlbum;
         
@@ -264,10 +266,9 @@ public sealed class MainWindowViewModel : ViewModelBase
                 SelectedAlbum = AlbumsVm.SelectedAlbum;
             }
         };
-
+        
         AddTrackCommand = new RelayCommand(
-            async _ => await AddTrackAsync(),
-            _ => !string.IsNullOrWhiteSpace(NewTrackTitle));
+            async _ => await AddTrackAsync());
 
         UpdateTrackCommand = new RelayCommand(
             async _ => await UpdateSelectedTrackAsync(),
@@ -303,47 +304,45 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private async Task AddTrackAsync()
     {
-        var track = new Track
-        {
-            Id = Guid.NewGuid(),
-            Title = NewTrackTitle,
-            Genre = string.IsNullOrWhiteSpace(NewTrackGenre) ? "Unknown" : NewTrackGenre,
-            Duration = NewTrackDurationSeconds > 0 ? NewTrackDurationSeconds : 180,
-            Rating = NewTrackRating,
-            AlbumId = await _libraryService.GetOrCreateDefaultAlbumIdAsync()
-        };
+        var albums = await _libraryService.GetAllAlbumsAsync();
+        if (albums.Count == 0)
+            return;
+
+        var track = await _dialogService.ShowTrackEditorAsync(null, albums);
+        if (track is null)
+            return;
 
         await _libraryService.AddTrackAsync(track);
-        
+
         _allTracks.Add(track);
         ApplyFilter();
-        
-        NewTrackTitle = string.Empty;
-        NewTrackGenre = string.Empty;
-        NewTrackDurationSeconds = 0;
-        NewTrackRating = 0m;
     }
 
     private async Task UpdateSelectedTrackAsync()
     {
-        if (SelectedTrack is null) return;
+        if (SelectedTrack is null)
+            return;
 
-        var updated = SelectedTrack with
-        {
-            Title = EditTrackTitle,
-            Genre = string.IsNullOrWhiteSpace(EditTrackGenre) ? "Unknown" : EditTrackGenre,
-            Duration = EditTrackDurationSeconds > 0 ? EditTrackDurationSeconds : 180,
-            Rating = EditTrackRating
-        };
+        var albums = await _libraryService.GetAllAlbumsAsync();
 
-        await _libraryService.UpdateTrackAsync(updated);
+        var edited = await _dialogService.ShowTrackEditorAsync(SelectedTrack, albums);
+        if (edited is null)
+            return;
+
+        await _libraryService.UpdateTrackAsync(edited);
 
         var index = Tracks.IndexOf(SelectedTrack);
         if (index >= 0)
         {
-            Tracks[index] = updated;
-            SelectedTrack = updated;
+            Tracks[index] = edited;
+            SelectedTrack = edited;
         }
+
+        var allIndex = _allTracks.FindIndex(t => t.Id == edited.Id);
+        if (allIndex >= 0)
+            _allTracks[allIndex] = edited;
+
+        ApplyFilter();
     }
     
     private async Task DeleteSelectedTrackAsync()
@@ -401,40 +400,4 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         UpdateTitle();
     }
-
-    
-    // albums
-    public async Task<List<Album>> GetAllAlbumsAsync()
-        => await _libraryService.GetAllAlbumsAsync();
-    
-    
-    // интеграция диалогового окна
-    public async Task CreateTrackFromDialogAsync(Track track)
-    {
-        await _libraryService.AddTrackAsync(track);
-
-        _allTracks.Add(track);
-        ApplyFilter();
-    }
-
-    public async Task UpdateTrackFromDialogAsync(Track updated)
-    {
-        await _libraryService.UpdateTrackAsync(updated);
-
-        var index = Tracks.IndexOf(SelectedTrack!);
-        if (index >= 0)
-        {
-            Tracks[index] = updated;
-            SelectedTrack = updated;
-        }
-
-        var allIndex = _allTracks.FindIndex(t => t.Id == updated.Id);
-        if (allIndex >= 0)
-        {
-            _allTracks[allIndex] = updated;
-        }
-
-        ApplyFilter();
-    }
-
 }
