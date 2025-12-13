@@ -256,9 +256,6 @@ public sealed class MainWindowViewModel : ViewModelBase
         ArtistsVm = new ArtistsViewModel(_libraryService, _dialogService);
         AlbumsVm = new AlbumsViewModel(_libraryService, _dialogService, ArtistsVm);
         
-        
-        SelectedAlbum = AlbumsVm.SelectedAlbum;
-        
         AlbumsVm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(AlbumsVm.SelectedAlbum))
@@ -280,6 +277,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         
         LoadTracks();
         _ = AlbumsVm.LoadAsync();
+        _ = ArtistsVm.LoadArtistsAsync();
     }
 
     private void LoadTracks()

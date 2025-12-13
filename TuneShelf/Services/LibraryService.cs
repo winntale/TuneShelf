@@ -79,15 +79,21 @@ public sealed class LibraryService
         await db.SaveChangesAsync();
     }
 
-    public async Task DeleteAlbumAsync(Guid id)
+    public async Task<bool> DeleteAlbumAsync(Guid id)
     {
         await using var db = new TuneShelfDbContext();
         
+        var hasTracks = await db.Tracks.AnyAsync(t => t.AlbumId == id);
+        if (hasTracks)
+            return false;
+        
         var album = await db.Albums.FindAsync(id);
-        if (album is null) return;
+        if (album is null)
+            return true;
 
         db.Albums.Remove(album);
         await db.SaveChangesAsync();
+        return true;
     }
     
     
@@ -99,12 +105,6 @@ public sealed class LibraryService
         return await db.Artists
             .OrderBy(a => a.Name)
             .ToListAsync();
-    }
-
-    public async Task<Artist?> GetArtistByIdAsync(Guid id)
-    {
-        await using var db = new TuneShelfDbContext();
-        return await db.Artists.FindAsync(id);
     }
 
     public async Task<Artist> CreateArtistAsync(Artist artist)
@@ -122,14 +122,21 @@ public sealed class LibraryService
         await db.SaveChangesAsync();
     }
 
-    public async Task DeleteArtistAsync(Guid id)
+    public async Task<bool> DeleteArtistAsync(Guid id)
     {
         await using var db = new TuneShelfDbContext();
+        
+        var hasAlbums = await db.Albums.AnyAsync(a => a.ArtistId == id);
+        if (hasAlbums)
+            return false;
+        
         var artist = await db.Artists.FindAsync(id);
-        if (artist is null) return;
+        if (artist is null) 
+            return true;
 
         db.Artists.Remove(artist);
         await db.SaveChangesAsync();
+        return true;
     }
 
     

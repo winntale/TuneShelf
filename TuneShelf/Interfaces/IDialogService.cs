@@ -7,4 +7,5 @@ public interface IDialogService
 {
     Task<Album?> ShowAlbumEditorAsync(Album? album);
     Task<Artist?> ShowArtistEditorAsync(Artist? artist);
+    Task ShowInfoAsync(string title, string message);
 }

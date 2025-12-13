@@ -69,6 +69,7 @@ public sealed class ArtistsViewModel : ViewModelBase
 
         var artists = await _libraryService.GetAllArtistsAsync();
         _allArtists.AddRange(artists);
+        
         ApplyFilter();
     }
     
@@ -103,8 +104,16 @@ public sealed class ArtistsViewModel : ViewModelBase
         if (SelectedArtist is null) return;
 
         var id = SelectedArtist.Id;
-        await _libraryService.DeleteArtistAsync(id);
+        var ok = await _libraryService.DeleteArtistAsync(id);
 
+        if (!ok)
+        {
+            await _dialogService.ShowInfoAsync(
+                "Удаление запрещено",
+                "Нельзя удалить артиста: у него есть альбомы.");
+            return;
+        }
+        
         _allArtists.RemoveAll(a => a.Id == id);
         ApplyFilter();
         SelectedArtist = null;

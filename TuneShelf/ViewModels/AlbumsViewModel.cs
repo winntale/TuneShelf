@@ -46,7 +46,7 @@ public sealed class AlbumsViewModel : ViewModelBase
             if (_albumSearchQuery == value) return;
             _albumSearchQuery = value;
             OnPropertyChanged();
-            ApplyAlbumFilter();
+            ApplyFilter();
         }
     }
 
@@ -58,7 +58,7 @@ public sealed class AlbumsViewModel : ViewModelBase
             if (_selectedArtist == value) return;
             _selectedArtist = value;  
             OnPropertyChanged();
-            ApplyAlbumFilter();
+            ApplyFilter();
         }
     }
     
@@ -70,7 +70,7 @@ public sealed class AlbumsViewModel : ViewModelBase
             if (_showOnlySelectedArtistAlbums == value) return;
             _showOnlySelectedArtistAlbums = value;
             OnPropertyChanged();
-            ApplyAlbumFilter();
+            ApplyFilter();
         }
     }
 
@@ -111,7 +111,7 @@ public sealed class AlbumsViewModel : ViewModelBase
         var albums = await _libraryService.GetAllAlbumsAsync();
         _allAlbums.AddRange(albums);
 
-        ApplyAlbumFilter();
+        ApplyFilter();
     }
 
     private async Task CreateAsync()
@@ -141,15 +141,26 @@ public sealed class AlbumsViewModel : ViewModelBase
     {
         if (SelectedAlbum is null) return;
 
-        await _libraryService.DeleteAlbumAsync(SelectedAlbum.Id);
-        Albums.Remove(SelectedAlbum);
+        var ok = await _libraryService.DeleteAlbumAsync(SelectedAlbum.Id);
+        if (!ok)
+        {
+            await _dialogService.ShowInfoAsync(
+                "Удаление запрещено",
+                "Нельзя удалить альбом: у него есть треки.");
+            return;
+        }
+        
+        _allAlbums.RemoveAll(a => a.Id == SelectedAlbum.Id);
+        ApplyFilter();
     }
     
-    private void ApplyAlbumFilter()
+    private void ApplyFilter()
     {
+        var previous = SelectedAlbum;
+
         Albums.Clear();
 
-        var query = _albumSearchQuery.Trim();
+        var query = _albumSearchQuery?.Trim();
         IEnumerable<Album> filtered = _allAlbums;
 
         if (!string.IsNullOrWhiteSpace(query))
@@ -160,14 +171,25 @@ public sealed class AlbumsViewModel : ViewModelBase
                 (!string.IsNullOrEmpty(a.Title) && a.Title.ToLowerInvariant().Contains(q)) ||
                 a.Year.ToString().Contains(q));
         }
-        
+
         if (ShowOnlySelectedArtistAlbums && SelectedArtist is not null)
         {
-            filtered = filtered.Where(a => a.ArtistId == SelectedArtist.Id);
+            var artistId = SelectedArtist.Id;
+            filtered = filtered.Where(a => a.ArtistId == artistId);
         }
 
         foreach (var album in filtered)
             Albums.Add(album);
+        
+        if (previous is not null)
+        {
+            var match = Albums.FirstOrDefault(a => a.Id == previous.Id);
+            if (match is not null)
+                SelectedAlbum = match;
+            else
+                SelectedAlbum = null;
+        }
     }
+
 
 }

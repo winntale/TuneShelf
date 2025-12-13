@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
+using Avalonia.Media;
 using TuneShelf.Interfaces;
 using TuneShelf.Models;
 
@@ -372,6 +373,42 @@ public sealed class DialogService : IDialogService
 
         await window.ShowDialog(parent);
         return await tcs.Task;
+    }
+
+    
+    // INFO WINDOW
+    
+    public async Task ShowInfoAsync(string title, string message)
+    {
+        var window = new Window
+        {
+            Title = title,
+            Width = 350,
+            Height = 160,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false
+        };
+
+        var stack = new StackPanel
+        {
+            Margin = new Thickness(20),
+            Spacing = 10
+        };
+
+        stack.Children.Add(new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap });
+
+        var button = new Button { Content = "OK", Width = 80, HorizontalAlignment = HorizontalAlignment.Right };
+        stack.Children.Add(button);
+
+        window.Content = stack;
+
+        button.Click += (_, _) => window.Close();
+
+        Window? parent = null;
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            parent = desktop.MainWindow;
+
+        await window.ShowDialog(parent);
     }
 
 }
