@@ -170,7 +170,7 @@ public sealed class AlbumsViewModel : ViewModelBase
         var created = await _libraryService.CreateAlbumAsync(edited);
         Albums.Add(created);
 
-        ApplyFilter();
+        await LoadAsync();
     }
 
     private async Task EditAsync()
@@ -189,7 +189,7 @@ public sealed class AlbumsViewModel : ViewModelBase
         Albums[idx] = edited;
         SelectedAlbum = edited;
 
-        ApplyFilter();
+        await LoadAsync();
     }
 
     private async Task DeleteAsync()

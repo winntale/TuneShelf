@@ -355,7 +355,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         await _libraryService.AddTrackAsync(track);
 
         _allTracks.Add(track);
-        ApplyFilter();
+        LoadTracks();
     }
 
     private async Task UpdateSelectedTrackAsync()
@@ -382,7 +382,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         if (allIndex >= 0)
             _allTracks[allIndex] = edited;
 
-        ApplyFilter();
+        LoadTracks();
     }
 
     private async Task DeleteSelectedTrackAsync()

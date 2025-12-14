@@ -15,8 +15,9 @@ public sealed class LibraryService
         await using var db = new TuneShelfDbContext();
 
         return await db.Tracks
+            .AsNoTracking()
             .Include(t => t.Album)
-            .ThenInclude(a => a.Artist)
+                .ThenInclude(a => a.Artist)
             .OrderBy(t => t.Title)
             .ToListAsync();
     }
@@ -32,12 +33,12 @@ public sealed class LibraryService
     {
         await using var db = new TuneShelfDbContext();
 
-        db.Tracks.Attach(track);
-        db.Entry(track).State = EntityState.Modified;
-
+        var toUpdate = track with { Album = null, PlaylistTracks = new List<PlaylistTrack>() };
+        
+        db.Tracks.Update(toUpdate);
         await db.SaveChangesAsync();
     }
-
+    
     public async Task DeleteTrackAsync(Guid trackId)
     {
         await using var db = new TuneShelfDbContext();
@@ -63,7 +64,7 @@ public sealed class LibraryService
     public async Task<Album> CreateAlbumAsync(Album album)
     {
         await using var db = new TuneShelfDbContext();
-        db.Albums.Add(album);
+        db.Albums.Add(album);   
         await db.SaveChangesAsync();
         return album;
     }
@@ -99,6 +100,7 @@ public sealed class LibraryService
     {
         await using var db = new TuneShelfDbContext();
         return await db.Artists
+            .AsNoTracking()
             .OrderBy(a => a.Name)
             .ToListAsync();
     }
@@ -142,6 +144,7 @@ public sealed class LibraryService
     {
         await using var db = new TuneShelfDbContext();
         return await db.Playlists
+            .AsNoTracking()
             .OrderBy(p => p.Name)
             .ToListAsync();
     }
@@ -218,6 +221,7 @@ public sealed class LibraryService
         await using var db = new TuneShelfDbContext();
 
         return await db.PlaylistTracks
+            .AsNoTracking()
             .Where(pt => pt.PlaylistId == playlistId)
             .Include(pt => pt.Track)
                 .ThenInclude(t => t.Album)
