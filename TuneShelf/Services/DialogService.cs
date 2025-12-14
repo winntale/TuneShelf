@@ -5,11 +5,14 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using TuneShelf.Interfaces;
 using TuneShelf.Models;
+using Track = TuneShelf.Models.Track;
 
 namespace TuneShelf.Services;
 
@@ -20,8 +23,8 @@ public sealed class DialogService : IDialogService
         var window = new Window
         {
             Title = track is null ? "Создать трек" : "Редактировать трек",
-            Width = 450,
-            Height = 300,
+            Width = 520,
+            Height = 340,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             CanResize = false
         };
@@ -31,8 +34,10 @@ public sealed class DialogService : IDialogService
         grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // genre
         grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // album
         grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // duration + rating
+        grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // file
         grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); // buttons
 
+        // Title
         var titleBox = new TextBox
         {
             Watermark = "Название трека",
@@ -41,6 +46,7 @@ public sealed class DialogService : IDialogService
         };
         Grid.SetRow(titleBox, 0);
 
+        // Genre
         var genreBox = new TextBox
         {
             Watermark = "Жанр",
@@ -49,10 +55,11 @@ public sealed class DialogService : IDialogService
         };
         Grid.SetRow(genreBox, 1);
 
+        // Album ComboBox — ровно как в старой рабочей версии
         var albumCombo = new ComboBox
         {
             ItemsSource = albums,
-            SelectedItem = albums.FirstOrDefault(a => a.Id == track?.AlbumId) 
+            SelectedItem = albums.FirstOrDefault(a => a.Id == track?.AlbumId)
                            ?? albums.FirstOrDefault(),
             Margin = new Thickness(0, 0, 0, 10)
         };
@@ -60,20 +67,25 @@ public sealed class DialogService : IDialogService
             _ => true,
             a => new TextBlock { Text = a.Title },
             true);
+        albumCombo.SelectionBoxItemTemplate = new FuncDataTemplate<Album>(
+            _ => true,
+            a => new TextBlock { Text = "Альбом" },
+            true);
         Grid.SetRow(albumCombo, 2);
-
+        
+        // Duration + Rating
         var bottomPanel = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Spacing = 12,
-            Margin = new Thickness(0, 0, 0, 10)
+            Spacing     = 12,
+            Margin      = new Thickness(0, 0, 0, 10)
         };
         Grid.SetRow(bottomPanel, 3);
 
         var durationBox = new TextBox
         {
             Watermark = "Длительность (сек)",
-            Text      = track?.Duration.ToString() ?? "180",
+            Text      = (track?.Duration > 0 ? track.Duration : 180).ToString(),
             Width     = 120
         };
         var ratingBox = new TextBox
@@ -85,15 +97,41 @@ public sealed class DialogService : IDialogService
         bottomPanel.Children.Add(durationBox);
         bottomPanel.Children.Add(ratingBox);
 
+        // File picker: TextBox + Button
+        var filePanel = new Grid { Margin = new Thickness(0, 0, 0, 10) };
+        filePanel.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        filePanel.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+        Grid.SetRow(filePanel, 4);
+
+        var filePathBox = new TextBox
+        {
+            Text       = track?.FilePath ?? string.Empty,
+            IsReadOnly = true,
+            Watermark  = "Файл не выбран",
+            Margin     = new Thickness(0, 0, 6, 0)
+        };
+        Grid.SetColumn(filePathBox, 0);
+
+        var browseButton = new Button
+        {
+            Content = "Выбрать файл",
+            Width   = 120
+        };
+        Grid.SetColumn(browseButton, 1);
+
+        filePanel.Children.Add(filePathBox);
+        filePanel.Children.Add(browseButton);
+
+        // Buttons
         var buttons = new StackPanel
         {
-            Orientation = Orientation.Horizontal,
+            Orientation         = Orientation.Horizontal,
             HorizontalAlignment = HorizontalAlignment.Right,
-            Spacing = 10
+            Spacing             = 10
         };
-        Grid.SetRow(buttons, 4);
+        Grid.SetRow(buttons, 5);
 
-        var okButton = new Button { Content = "OK", Width = 80 };
+        var okButton     = new Button { Content = "OK",     Width = 80 };
         var cancelButton = new Button { Content = "Отмена", Width = 80 };
         buttons.Children.Add(okButton);
         buttons.Children.Add(cancelButton);
@@ -102,9 +140,32 @@ public sealed class DialogService : IDialogService
         grid.Children.Add(genreBox);
         grid.Children.Add(albumCombo);
         grid.Children.Add(bottomPanel);
+        grid.Children.Add(filePanel);
         grid.Children.Add(buttons);
 
         window.Content = grid;
+
+        // выбор файла
+        browseButton.Click += async (_, _) =>
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title         = "Выберите аудиофайл",
+                AllowMultiple = false,
+                Filters =
+                {
+                    new FileDialogFilter
+                    {
+                        Name = "Audio files",
+                        Extensions = { "mp3", "wav", "flac", "ogg", "aac", "m4a" }
+                    }
+                }
+            };
+
+            var result = await dialog.ShowAsync(window);
+            if (result is { Length: > 0 })
+                filePathBox.Text = result[0];
+        };
 
         var tcs = new TaskCompletionSource<Track?>();
 
@@ -120,23 +181,27 @@ public sealed class DialogService : IDialogService
             if (!decimal.TryParse(ratingBox.Text, out var rating))
                 rating = 0m;
 
+            var filePath = filePathBox.Text ?? string.Empty;
+
             var result = track is null
                 ? new Track
                 {
                     Id       = Guid.NewGuid(),
-                    Title    = titleBox.Text,
-                    Genre    = string.IsNullOrWhiteSpace(genreBox.Text) ? "Unknown" : genreBox.Text,
+                    Title    = titleBox.Text.Trim(),
+                    Genre    = string.IsNullOrWhiteSpace(genreBox.Text) ? "Unknown" : genreBox.Text.Trim(),
                     Duration = duration,
                     Rating   = rating,
-                    AlbumId  = selectedAlbum.Id
+                    AlbumId  = selectedAlbum.Id,
+                    FilePath = filePath
                 }
                 : track with
                 {
-                    Title    = titleBox.Text,
-                    Genre    = string.IsNullOrWhiteSpace(genreBox.Text) ? "Unknown" : genreBox.Text,
+                    Title    = titleBox.Text.Trim(),
+                    Genre    = string.IsNullOrWhiteSpace(genreBox.Text) ? "Unknown" : genreBox.Text.Trim(),
                     Duration = duration,
                     Rating   = rating,
-                    AlbumId  = selectedAlbum.Id
+                    AlbumId  = selectedAlbum.Id,
+                    FilePath = filePath
                 };
 
             if (!tcs.Task.IsCompleted)
@@ -149,7 +214,6 @@ public sealed class DialogService : IDialogService
         {
             if (!tcs.Task.IsCompleted)
                 tcs.SetResult(null);
-
             window.Close();
         };
 
@@ -170,6 +234,7 @@ public sealed class DialogService : IDialogService
 
         return await tcs.Task;
     }
+
 
     
     public async Task<Album?> ShowAlbumEditorAsync(Album? album, IReadOnlyList<Artist> artists)

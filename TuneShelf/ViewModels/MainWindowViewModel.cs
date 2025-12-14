@@ -15,6 +15,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 {
     private readonly LibraryService _libraryService;
     private readonly IDialogService _dialogService;
+    private readonly AudioPlaybackService _audioService;
 
     public AlbumsViewModel AlbumsVm { get; }
     public ArtistsViewModel ArtistsVm { get; }
@@ -43,6 +44,11 @@ public sealed class MainWindowViewModel : ViewModelBase
     
     private Album? _selectedAlbum;
     private bool _showOnlySelectedAlbumTracks;
+    
+    //private readonly IMediaPlayer _mediaPlayer;
+
+    
+
     
     public string Title
     {
@@ -130,6 +136,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             
             ((RelayCommand)UpdateTrackCommand).RaiseCanExecuteChanged();
             ((RelayCommand)DeleteTrackCommand).RaiseCanExecuteChanged();
+            ((RelayCommand)PlayPlaylistTrackCommand).RaiseCanExecuteChanged();
+            ((RelayCommand)PlaySelectedTrackCommand).RaiseCanExecuteChanged();
         }
     }
     
@@ -262,16 +270,23 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand AddTrackCommand { get; }
     public ICommand UpdateTrackCommand { get; }
     public ICommand DeleteTrackCommand { get; }
+    
     public ICommand NavigateToTracksCommand { get; }
     public ICommand NavigateToAlbumsCommand { get; }
     public ICommand NavigateToArtistsCommand { get; }
     public ICommand NavigateToPlaylistsCommand { get; }
+    
     public ICommand RefreshAllCommand { get; }
+    
+    public ICommand PlaySelectedTrackCommand { get; }
+    public ICommand StopPlaybackCommand { get; }
+    public ICommand PlayPlaylistTrackCommand { get; }
     
     public MainWindowViewModel()
     {
         _libraryService = new LibraryService();
         _dialogService = new DialogService();
+        _audioService = new AudioPlaybackService();
         ArtistsVm = new ArtistsViewModel(_libraryService, _dialogService);
         AlbumsVm = new AlbumsViewModel(_libraryService, _dialogService, ArtistsVm);
         PlaylistsVm = new PlaylistsViewModel(_libraryService, _dialogService);
@@ -305,6 +320,24 @@ public sealed class MainWindowViewModel : ViewModelBase
             await ArtistsVm.LoadArtistsAsync();
             await PlaylistsVm.LoadPlaylistsAsync();
         });
+        
+        PlaySelectedTrackCommand = new RelayCommand(
+            async _ => await PlaySelectedTrackAsync(),
+            _ => SelectedTrack is not null &&
+                 !string.IsNullOrWhiteSpace(SelectedTrack.FilePath));
+
+        StopPlaybackCommand = new RelayCommand(_ => _audioService.Stop());
+        
+        PlayPlaylistTrackCommand = new RelayCommand(
+            async _ => await PlayPlaylistTrackAsync(),
+            _ => PlaylistsVm.SelectedTrackInPlaylist is not null &&
+                 !string.IsNullOrWhiteSpace(PlaylistsVm.SelectedTrackInPlaylist.FilePath));
+        
+        PlaylistsVm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PlaylistsViewModel.SelectedTrackInPlaylist))
+                ((RelayCommand)PlayPlaylistTrackCommand).RaiseCanExecuteChanged();
+        };
         
         LoadTracks();
         _ = AlbumsVm.LoadAsync();
@@ -387,6 +420,23 @@ public sealed class MainWindowViewModel : ViewModelBase
         ApplyFilter();
         
         SelectedTrack = null;
+    }
+    
+    private async Task PlaySelectedTrackAsync()
+    {
+        if (SelectedTrack is null) return;
+        if (string.IsNullOrWhiteSpace(SelectedTrack.FilePath)) return;
+
+        await _audioService.PlayFileAsync(SelectedTrack.FilePath);
+    }
+    
+    public async Task PlayPlaylistTrackAsync()
+    {
+        if (PlaylistsVm.SelectedTrackInPlaylist is null) return;
+        var track = PlaylistsVm.SelectedTrackInPlaylist;
+        if (string.IsNullOrWhiteSpace(track.FilePath)) return;
+
+        await _audioService.PlayFileAsync(track.FilePath);
     }
     
     private void ApplyFilter()

@@ -12,5 +12,6 @@ public sealed record Track
     public required decimal Rating { get; init; }
     public required Guid AlbumId { get; init; }
     
+    public string FilePath { get; init; } = string.Empty;
     public ICollection<PlaylistTrack> PlaylistTracks { get; set; } = new List<PlaylistTrack>();
 }

@@ -202,16 +202,11 @@ public sealed class PlaylistsViewModel : ViewModelBase
 
     private async Task CreatePlaylistAsync()
     {
-        var name = await _dialogService.PromptTextAsync("Новый плейлист", "Название плейлиста: ");
-        if (string.IsNullOrWhiteSpace(name)) return;
+        var edited = await _dialogService.ShowPlaylistEditorAsync(null);
+        if (edited is null) return;
 
-        var playlist = new Playlist
-        {
-            Id   = Guid.NewGuid(),
-            Name = name.Trim()
-        };
+        var created = await _libraryService.CreatePlaylistAsync(edited);
 
-        var created = await _libraryService.CreatePlaylistAsync(playlist);
         _allPlaylists.Add(created);
         Playlists.Add(created);
 
