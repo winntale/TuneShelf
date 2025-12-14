@@ -17,6 +17,7 @@ public sealed class ArtistsViewModel : ViewModelBase
     private readonly IDialogService _dialogService;
 
     public ObservableCollection<Artist> Artists { get; } = new();
+
     public sealed record ArtistDisplay(Artist Artist, int AlbumCount)
     {
         public Guid Id => Artist.Id;
@@ -27,6 +28,7 @@ public sealed class ArtistsViewModel : ViewModelBase
     public ObservableCollection<ArtistDisplay> ArtistsEx { get; } = new();
 
     private ArtistDisplay? _selectedArtistDisplay;
+
     public ArtistDisplay? SelectedArtistDisplay
     {
         get => _selectedArtistDisplay;
@@ -42,6 +44,7 @@ public sealed class ArtistsViewModel : ViewModelBase
     }
 
     private Artist? _selectedArtist;
+
     public Artist? SelectedArtist
     {
         get => _selectedArtist;
@@ -56,6 +59,7 @@ public sealed class ArtistsViewModel : ViewModelBase
     }
 
     private string _artistSearchQuery = string.Empty;
+
     public string ArtistSearchQuery
     {
         get => _artistSearchQuery;
@@ -70,22 +74,22 @@ public sealed class ArtistsViewModel : ViewModelBase
 
     private readonly List<Artist> _allArtists = new();
 
-    public ICommand LoadArtistsCommand  { get; }
+    public ICommand LoadArtistsCommand { get; }
     public ICommand CreateArtistCommand { get; }
-    public ICommand EditArtistCommand   { get; }
+    public ICommand EditArtistCommand { get; }
     public ICommand DeleteArtistCommand { get; }
-    
+
     public ArtistsViewModel(LibraryService libraryService, IDialogService dialogService)
     {
         _libraryService = libraryService;
-        _dialogService  = dialogService;
+        _dialogService = dialogService;
 
-        LoadArtistsCommand   = new RelayCommand(async _ => await LoadArtistsAsync());
-        CreateArtistCommand  = new RelayCommand(async _ => await CreateArtistAsync());
-        EditArtistCommand    = new RelayCommand(async _ => await EditArtistAsync(),   _ => SelectedArtist is not null);
-        DeleteArtistCommand  = new RelayCommand(async _ => await DeleteArtistAsync(), _ => SelectedArtist is not null);
+        LoadArtistsCommand = new RelayCommand(async _ => await LoadArtistsAsync());
+        CreateArtistCommand = new RelayCommand(async _ => await CreateArtistAsync());
+        EditArtistCommand = new RelayCommand(async _ => await EditArtistAsync(), _ => SelectedArtist is not null);
+        DeleteArtistCommand = new RelayCommand(async _ => await DeleteArtistAsync(), _ => SelectedArtist is not null);
     }
-    
+
     public async Task LoadArtistsAsync()
     {
         _allArtists.Clear();
@@ -107,7 +111,7 @@ public sealed class ArtistsViewModel : ViewModelBase
 
         ApplyFilter();
     }
-    
+
     private async Task CreateArtistAsync()
     {
         var edited = await _dialogService.ShowArtistEditorAsync(null);
@@ -148,12 +152,12 @@ public sealed class ArtistsViewModel : ViewModelBase
                 "Нельзя удалить артиста: у него есть альбомы.");
             return;
         }
-        
+
         _allArtists.RemoveAll(a => a.Id == id);
         ApplyFilter();
         SelectedArtist = null;
     }
-    
+
     private void ApplyFilter()
     {
         Artists.Clear();
@@ -178,5 +182,4 @@ public sealed class ArtistsViewModel : ViewModelBase
             ArtistsEx.Add(new ArtistDisplay(artist, albumLookup.TryGetValue(artist.Id, out var c) ? c : 0));
         }
     }
-
 }

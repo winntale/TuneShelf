@@ -16,7 +16,7 @@ public sealed class LibraryService
 
         return await db.Tracks
             .Include(t => t.Album)
-                .ThenInclude(a => a.Artist)
+            .ThenInclude(a => a.Artist)
             .OrderBy(t => t.Title)
             .ToListAsync();
     }
@@ -37,7 +37,7 @@ public sealed class LibraryService
 
         await db.SaveChangesAsync();
     }
-    
+
     public async Task DeleteTrackAsync(Guid trackId)
     {
         await using var db = new TuneShelfDbContext();
@@ -47,20 +47,15 @@ public sealed class LibraryService
         db.Tracks.Remove(track);
         await db.SaveChangesAsync();
     }
-    
-    public async Task<int> GetTrackCountForAlbumAsync(Guid albumId)
-    {
-        await using var db = new TuneShelfDbContext();
-        return await db.Tracks.CountAsync(t => t.AlbumId == albumId);
-    }
-    
+
     // ALBUMS
-    
+
     public async Task<List<Album>> GetAllAlbumsAsync()
     {
         await using var db = new TuneShelfDbContext();
         return await db.Albums
             .AsNoTracking()
+            .Include(a => a.Tracks)
             .OrderBy(a => a.Title)
             .ToListAsync();
     }
@@ -83,11 +78,11 @@ public sealed class LibraryService
     public async Task<bool> DeleteAlbumAsync(Guid id)
     {
         await using var db = new TuneShelfDbContext();
-        
+
         var hasTracks = await db.Tracks.AnyAsync(t => t.AlbumId == id);
         if (hasTracks)
             return false;
-        
+
         var album = await db.Albums.FindAsync(id);
         if (album is null)
             return true;
@@ -96,10 +91,10 @@ public sealed class LibraryService
         await db.SaveChangesAsync();
         return true;
     }
-    
-    
+
+
     // ARTISTS
-    
+
     public async Task<List<Artist>> GetAllArtistsAsync()
     {
         await using var db = new TuneShelfDbContext();
@@ -126,35 +121,29 @@ public sealed class LibraryService
     public async Task<bool> DeleteArtistAsync(Guid id)
     {
         await using var db = new TuneShelfDbContext();
-        
+
         var hasAlbums = await db.Albums.AnyAsync(a => a.ArtistId == id);
         if (hasAlbums)
             return false;
-        
+
         var artist = await db.Artists.FindAsync(id);
-        if (artist is null) 
+        if (artist is null)
             return true;
 
         db.Artists.Remove(artist);
         await db.SaveChangesAsync();
         return true;
     }
-    
-    
+
+
     // PLAYLISTS
-    
+
     public async Task<List<Playlist>> GetAllPlaylistsAsync()
     {
         await using var db = new TuneShelfDbContext();
         return await db.Playlists
             .OrderBy(p => p.Name)
             .ToListAsync();
-    }
-
-    public async Task<Playlist?> GetPlaylistByIdAsync(Guid id)
-    {
-        await using var db = new TuneShelfDbContext();
-        return await db.Playlists.FindAsync(id);
     }
 
     public async Task<Playlist> CreatePlaylistAsync(Playlist playlist)
@@ -175,7 +164,7 @@ public sealed class LibraryService
     public async Task<bool> DeletePlaylistAsync(Guid id)
     {
         await using var db = new TuneShelfDbContext();
-        
+
         var links = await db.PlaylistTracks
             .Where(pt => pt.PlaylistId == id)
             .ToListAsync();
@@ -191,10 +180,10 @@ public sealed class LibraryService
         await db.SaveChangesAsync();
         return true;
     }
-    
-    
+
+
     // PLAYLISTTRACK
-    
+
     public async Task AddTrackToPlaylistAsync(Guid playlistId, Guid trackId)
     {
         await using var db = new TuneShelfDbContext();
@@ -206,7 +195,7 @@ public sealed class LibraryService
         db.PlaylistTracks.Add(new PlaylistTrack
         {
             PlaylistId = playlistId,
-            TrackId    = trackId
+            TrackId = trackId
         });
 
         await db.SaveChangesAsync();
@@ -230,67 +219,11 @@ public sealed class LibraryService
 
         return await db.PlaylistTracks
             .Where(pt => pt.PlaylistId == playlistId)
-            .Include(pt => pt.Track)                    // грузим Track
-            .ThenInclude(t => t.Album)             // грузим Album
-            .ThenInclude(a => a.Artist)        // грузим Artist
-            .Select(pt => pt.Track!)                   // вытаскиваем сам Track
+            .Include(pt => pt.Track)
+                .ThenInclude(t => t.Album)
+                .ThenInclude(a => a.Artist)
+            .Select(pt => pt.Track!)
             .OrderBy(t => t.Title)
             .ToListAsync();
-    }
-
-
-
-
-    
-    // DEFAULT VALUES GETTERS
-    
-    public async Task<Guid> GetOrCreateDefaultAlbumIdAsync()
-    {
-        await using var db = new TuneShelfDbContext();
-
-        var album = await db.Albums
-            .FirstOrDefaultAsync(a => a.Title == "Unknown Album");
-
-        if (album is not null)
-        {
-            return album.Id;
-        }
-        
-        var newAlbum = new Album
-        {
-            Id = Guid.NewGuid(),
-            Title = "Unknown Album",
-            Year = 0,
-            ArtistId = await GetOrCreateDefaultArtistIdAsync()
-        };
-
-        db.Albums.Add(newAlbum);
-        await db.SaveChangesAsync();
-
-        return newAlbum.Id;
-    }
-
-    public async Task<Guid> GetOrCreateDefaultArtistIdAsync()
-    {
-        await using var db = new TuneShelfDbContext();
-
-        var artist = await db.Artists
-            .FirstOrDefaultAsync(a => a.Name == "Unknown Artist");
-
-        if (artist is not null)
-        {
-            return artist.Id;
-        }
-
-        var newArtist = new Artist
-        {
-            Id = Guid.NewGuid(),
-            Name = "Unknown Artist"
-        };
-
-        db.Artists.Add(newArtist);
-        await db.SaveChangesAsync();
-
-        return newArtist.Id;
     }
 }

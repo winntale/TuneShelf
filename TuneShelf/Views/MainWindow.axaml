@@ -3,7 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:TuneShelf.ViewModels"
-    xmlns:conv="using:TuneShelf.Converters"
+        xmlns:conv="using:TuneShelf.Converters"
         x:Class="TuneShelf.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         mc:Ignorable="d"
@@ -31,7 +31,9 @@
 
     <Grid RowDefinitions="*,Auto" ColumnDefinitions="260,*">
         <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="260,*">
-            <!-- Левое навигационное меню -->
+
+            <!-- левое навигационное меню -->
+
             <Border Grid.Column="0"
                     Background="{StaticResource PanelBrush}"
                     BorderBrush="{StaticResource BorderBrush}"
@@ -39,53 +41,66 @@
                     Padding="18">
                 <StackPanel Spacing="12">
                     <TextBlock Classes="title" Text="TuneShelf" />
-                    <TextBlock Text="Music library" Foreground="{StaticResource TextBrush}" Opacity="0.8" />
+                    <TextBlock Text="Музыкальная библиотека" Foreground="{StaticResource TextBrush}" Opacity="0.8" />
 
                     <StackPanel Margin="0,12,0,0" Spacing="6">
-                        <Button Content="Треки" Command="{Binding NavigateToTracksCommand}" HorizontalAlignment="Stretch" Padding="8"
+                        <Button Content="Треки" Command="{Binding NavigateToTracksCommand}"
+                                HorizontalAlignment="Stretch" Padding="8"
                                 Background="{Binding SelectedTabIndex, Converter={StaticResource IndexToBackgroundConverter}, ConverterParameter=0}"
                                 Foreground="{Binding SelectedTabIndex, Converter={StaticResource IndexToForegroundConverter}, ConverterParameter=0}"
                                 BorderThickness="0" />
 
-                        <Button Content="Альбомы" Command="{Binding NavigateToAlbumsCommand}" HorizontalAlignment="Stretch" Padding="8"
+                        <Button Content="Альбомы" Command="{Binding NavigateToAlbumsCommand}"
+                                HorizontalAlignment="Stretch" Padding="8"
                                 Background="{Binding SelectedTabIndex, Converter={StaticResource IndexToBackgroundConverter}, ConverterParameter=1}"
                                 Foreground="{Binding SelectedTabIndex, Converter={StaticResource IndexToForegroundConverter}, ConverterParameter=1}"
                                 BorderThickness="0" />
 
-                        <Button Content="Артисты" Command="{Binding NavigateToArtistsCommand}" HorizontalAlignment="Stretch" Padding="8"
+                        <Button Content="Артисты" Command="{Binding NavigateToArtistsCommand}"
+                                HorizontalAlignment="Stretch" Padding="8"
                                 Background="{Binding SelectedTabIndex, Converter={StaticResource IndexToBackgroundConverter}, ConverterParameter=2}"
                                 Foreground="{Binding SelectedTabIndex, Converter={StaticResource IndexToForegroundConverter}, ConverterParameter=2}"
                                 BorderThickness="0" />
 
-                        <Button Content="Плейлисты" Command="{Binding NavigateToPlaylistsCommand}" HorizontalAlignment="Stretch" Padding="8"
-                            Background="{Binding SelectedTabIndex, Converter={StaticResource IndexToBackgroundConverter}, ConverterParameter=3}"
-                            Foreground="{Binding SelectedTabIndex, Converter={StaticResource IndexToForegroundConverter}, ConverterParameter=3}"
-                            BorderThickness="0" />
+                        <Button Content="Плейлисты" Command="{Binding NavigateToPlaylistsCommand}"
+                                HorizontalAlignment="Stretch" Padding="8"
+                                Background="{Binding SelectedTabIndex, Converter={StaticResource IndexToBackgroundConverter}, ConverterParameter=3}"
+                                Foreground="{Binding SelectedTabIndex, Converter={StaticResource IndexToForegroundConverter}, ConverterParameter=3}"
+                                BorderThickness="0" />
                     </StackPanel>
 
                     <Border Background="{StaticResource SurfaceBrush}" CornerRadius="6" Padding="10" Margin="0,18,0,0">
                         <StackPanel>
-                            <TextBlock Text="Quick Actions" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" />
-                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-                                <Button Content="➕ Add" Command="{Binding AddTrackCommand}" Padding="6" Background="{StaticResource PrimaryBrush}" Foreground="White" BorderThickness="0" />
-                                <Button Content="🔄 Refresh all" Command="{Binding RefreshAllCommand}" Padding="6" Background="Transparent" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" />
+                            <TextBlock Text="Быстрые действия" Foreground="{StaticResource TextBrush}"
+                                       FontWeight="SemiBold" />
+                            <StackPanel Orientation="Vertical" Spacing="8" Margin="0,8,0,0">
+                                <Button Content="➕ Добавить трек" Command="{Binding AddTrackCommand}" Padding="6"
+                                        Background="{StaticResource PrimaryBrush}" Foreground="White"
+                                        BorderThickness="0" />
+                                <Button Content="🔄 Обновить все списки" Command="{Binding RefreshAllCommand}"
+                                        Padding="6"
+                                        Background="Transparent" Foreground="{StaticResource TextBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    
-                    <CheckBox Content="Show only tracks of selected album"
+
+                    <CheckBox Content="Показывать только треки выбранного альбома"
                               IsChecked="{Binding ShowOnlySelectedAlbumTracks}"
                               Margin="0,10,0,0" />
-                    <CheckBox Content="Only show albums of selected artist"
+                    <CheckBox Content="Показывать только альбомы выбранного исполнителя"
                               IsChecked="{Binding AlbumsVm.ShowOnlySelectedArtistAlbums}"
                               Margin="0,10,0,0" />
                 </StackPanel>
             </Border>
 
-            <!-- Основное содержимое -->
+            <!-- основное -->
+
             <Grid Grid.Column="1" RowDefinitions="Auto,*" Margin="0">
-                <!-- Заголовок приложения -->
-                <Border Grid.Row="0" 
+
+                <!-- заголовок -->
+
+                <Border Grid.Row="0"
                         Background="{StaticResource SurfaceBrush}"
                         Padding="16"
                         BorderBrush="{StaticResource BorderBrush}"
@@ -97,19 +112,24 @@
                                    Foreground="{StaticResource TextBrush}"
                                    VerticalAlignment="Center"
                                    DockPanel.Dock="Left" />
-
-                        <!-- Header right-side controls removed: search box and profile button -->
                     </DockPanel>
                 </Border>
 
-                <!-- Content panels controlled by left navigation -->
+                <!-- панели содержимого, определяемые навигационной меню -->
+
                 <Grid Grid.Row="1" Margin="12">
-                    <!-- Tracks panel -->
-                    <Border IsVisible="{Binding SelectedTabIndex, Converter={StaticResource IndexToBoolConverter}, ConverterParameter=0}" Background="Transparent">
+
+                    <!-- панель треков -->
+
+                    <Border
+                        IsVisible="{Binding SelectedTabIndex, Converter={StaticResource IndexToBoolConverter}, ConverterParameter=0}"
+                        Background="Transparent">
                         <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="20">
-                            <!-- Поиск -->
+
+                            <!-- поиск -->
+
                             <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
-                                <TextBlock Text="Поиск:" 
+                                <TextBlock Text="Поиск:"
                                            VerticalAlignment="Center"
                                            FontSize="14"
                                            Foreground="{StaticResource TextBrush}"
@@ -120,9 +140,10 @@
                                          FontSize="14" />
                             </StackPanel>
 
-                            <!-- Фильтры -->
+                            <!-- фильтры -->
+
                             <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="15" Margin="0,0,0,8">
-                                <TextBlock Text="Жанр:" 
+                                <TextBlock Text="Жанр:"
                                            VerticalAlignment="Center"
                                            FontSize="14"
                                            Foreground="{StaticResource TextBrush}"
@@ -132,7 +153,7 @@
                                           SelectedItem="{Binding SelectedGenreFilter}"
                                           FontSize="14" />
 
-                                <TextBlock Text="Рейтинг:" 
+                                <TextBlock Text="Рейтинг:"
                                            VerticalAlignment="Center"
                                            FontSize="14"
                                            Foreground="{StaticResource TextBrush}"
@@ -141,7 +162,7 @@
                                          Watermark="Мин"
                                          Text="{Binding MinRating, UpdateSourceTrigger=PropertyChanged}"
                                          FontSize="14" />
-                                <TextBlock Text="—" 
+                                <TextBlock Text="—"
                                            VerticalAlignment="Center"
                                            Margin="5,0" />
                                 <TextBox Width="80"
@@ -150,7 +171,8 @@
                                          FontSize="14" />
                             </StackPanel>
 
-                            <!-- Кнопки действий -->
+                            <!-- кнопки действий -->
+
                             <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
                                 <Button Content="▶"
                                         Command="{Binding PlaySelectedTrackCommand}"
@@ -162,14 +184,16 @@
                                         Padding="15,8"
                                         FontSize="14"
                                         Cursor="Hand" />
-                                
+
                                 <Button Content="➕" Command="{Binding AddTrackCommand}" Padding="12" />
                                 <Button Content="✏️" Command="{Binding UpdateTrackCommand}" Padding="12" />
                                 <Button Content="🗑️" Command="{Binding DeleteTrackCommand}" Padding="12" />
-                                <Button Content="🔄" Command="{Binding RefreshAllCommand}" Padding="12" Margin="20,0,0,0" />
+                                <Button Content="🔄" Command="{Binding RefreshAllCommand}" Padding="12"
+                                        Margin="20,0,0,0" />
                             </StackPanel>
 
-                            <!-- Таблица треков -->
+                            <!-- таблица треков -->
+
                             <DataGrid Grid.Row="3"
                                       ItemsSource="{Binding Tracks}"
                                       SelectedItem="{Binding SelectedTrack, Mode=TwoWay}"
@@ -185,29 +209,36 @@
                                       BorderBrush="{StaticResource BorderBrush}"
                                       BorderThickness="1">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="1*" />
-                                    <DataGridTextColumn Header="Artist" Binding="{Binding Album.Artist.Name}" />
-                                    <DataGridTextColumn Header="Genre" Binding="{Binding Genre}" Width="200" />
-                                    <DataGridTextColumn Header="Duration" Binding="{Binding Duration, Converter={StaticResource DurationConverter}}" Width="120" />
-                                    <DataGridTextColumn Header="Rating" Binding="{Binding Rating}" Width="120" />
+                                    <DataGridTextColumn Header="Название" Binding="{Binding Title}" Width="1*" />
+                                    <DataGridTextColumn Header="Исполнитель" Binding="{Binding Album.Artist.Name}" />
+                                    <DataGridTextColumn Header="Жанр" Binding="{Binding Genre}" Width="150" />
+                                    <DataGridTextColumn Header="Длина"
+                                                        Binding="{Binding Duration, Converter={StaticResource DurationConverter}}"
+                                                        Width="170" />
+                                    <DataGridTextColumn Header="Оценка" Binding="{Binding Rating}" Width="120" />
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
                     </Border>
 
-                    <!-- Albums panel -->
-                    <Border IsVisible="{Binding SelectedTabIndex, Converter={StaticResource IndexToBoolConverter}, ConverterParameter=1}" Background="Transparent">
+                    <!-- панель альбомов -->
+
+                    <Border
+                        IsVisible="{Binding SelectedTabIndex, Converter={StaticResource IndexToBoolConverter}, ConverterParameter=1}"
+                        Background="Transparent">
                         <Grid RowDefinitions="Auto,Auto,*" Margin="20">
                             <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
-                                <TextBlock Text="Album search:" VerticalAlignment="Center" />
-                                <TextBox Width="250" Watermark="Title or year" Text="{Binding AlbumsVm.AlbumSearchQuery, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Поиск:" VerticalAlignment="Center" />
+                                <TextBox Width="300" Watermark="Введите название или год выпуска"
+                                         Text="{Binding AlbumsVm.AlbumSearchQuery, UpdateSourceTrigger=PropertyChanged}" />
                             </StackPanel>
 
                             <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
                                 <Button Content="➕" Command="{Binding AlbumsVm.CreateAlbumCommand}" Padding="12" />
                                 <Button Content="✏️" Command="{Binding AlbumsVm.EditAlbumCommand}" Padding="12" />
                                 <Button Content="🗑️" Command="{Binding AlbumsVm.DeleteAlbumCommand}" Padding="12" />
-                                <Button Content="🔄" Command="{Binding AlbumsVm.LoadAlbumsCommand}" Padding="12" Margin="20,0,0,0" />
+                                <Button Content="🔄" Command="{Binding AlbumsVm.LoadAlbumsCommand}" Padding="12"
+                                        Margin="20,0,0,0" />
                             </StackPanel>
 
                             <DataGrid Grid.Row="2"
@@ -225,27 +256,35 @@
                                       BorderBrush="{StaticResource BorderBrush}"
                                       BorderThickness="1">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="2*" />
-                                    <DataGridTextColumn Header="Artist" Binding="{Binding ArtistName}" Width="240" />
-                                    <DataGridTextColumn Header="Year" Binding="{Binding Year}" Width="120" />
+                                    <DataGridTextColumn Header="Название" Binding="{Binding Title}" Width="2*" />
+                                    <DataGridTextColumn Header="Исполнитель" Binding="{Binding ArtistName}" Width="240" />
+                                    <DataGridTextColumn Header="Год выпуска" Binding="{Binding Year}" Width="170" />
+                                    <DataGridTextColumn Header="Кол-во треков" Binding="{Binding TrackCount}"
+                                                        Width="150">
+                                    </DataGridTextColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
                     </Border>
 
-                    <!-- Artists -->
-                    <Border IsVisible="{Binding SelectedTabIndex, Converter={StaticResource IndexToBoolConverter}, ConverterParameter=2}" Background="Transparent">
+                    <!-- панель исполнителей -->
+
+                    <Border
+                        IsVisible="{Binding SelectedTabIndex, Converter={StaticResource IndexToBoolConverter}, ConverterParameter=2}"
+                        Background="Transparent">
                         <Grid RowDefinitions="Auto,Auto,*" Margin="20">
                             <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
                                 <TextBlock Text="Поиск:" VerticalAlignment="Center" />
-                                <TextBox Width="250" Watermark="Имя артиста..." Text="{Binding ArtistsVm.ArtistSearchQuery, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox Width="300" Watermark="Введите имя исполнителя"
+                                         Text="{Binding ArtistsVm.ArtistSearchQuery, UpdateSourceTrigger=PropertyChanged}" />
                             </StackPanel>
 
                             <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
                                 <Button Content="➕" Command="{Binding ArtistsVm.CreateArtistCommand}" Padding="12" />
                                 <Button Content="✏️" Command="{Binding ArtistsVm.EditArtistCommand}" Padding="12" />
                                 <Button Content="🗑️" Command="{Binding ArtistsVm.DeleteArtistCommand}" Padding="12" />
-                                <Button Content="🔄" Command="{Binding ArtistsVm.LoadArtistsCommand}" Padding="12" Margin="20,0,0,0" />
+                                <Button Content="🔄" Command="{Binding ArtistsVm.LoadArtistsCommand}" Padding="12"
+                                        Margin="20,0,0,0" />
                             </StackPanel>
 
                             <DataGrid Grid.Row="2"
@@ -261,24 +300,31 @@
                                       BorderBrush="{StaticResource BorderBrush}"
                                       BorderThickness="1">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" />
-                                    <DataGridTextColumn Header="Albums" Binding="{Binding AlbumCount}" Width="120" />
+                                    <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" />
+                                    <DataGridTextColumn Header="Альбомы" Binding="{Binding AlbumCount}" Width="120" />
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
                     </Border>
 
-                    <!-- Playlists -->
-                    <Border IsVisible="{Binding SelectedTabIndex, Converter={StaticResource IndexToBoolConverter}, ConverterParameter=3}" Background="Transparent">
+                    <!-- панель плейлистов -->
+
+                    <Border
+                        IsVisible="{Binding SelectedTabIndex, Converter={StaticResource IndexToBoolConverter}, ConverterParameter=3}"
+                        Background="Transparent">
                         <Grid ColumnDefinitions="1*,Auto,1*" RowDefinitions="Auto,*" Margin="20">
-                            <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+                            <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" Spacing="10"
+                                        Margin="0,0,0,8">
                                 <Button Content="➕" Command="{Binding PlaylistsVm.CreatePlaylistCommand}" Padding="12" />
                                 <Button Content="✏️" Command="{Binding PlaylistsVm.EditPlaylistCommand}" Padding="12" />
-                                <Button Content="🗑️" Command="{Binding PlaylistsVm.DeletePlaylistCommand}" Padding="12" />
-                                <Button Content="🔄" Command="{Binding PlaylistsVm.LoadPlaylistsCommand}" Padding="12" Margin="20,0,0,0" />
+                                <Button Content="🗑️" Command="{Binding PlaylistsVm.DeletePlaylistCommand}"
+                                        Padding="12" />
+                                <Button Content="🔄" Command="{Binding PlaylistsVm.LoadPlaylistsCommand}" Padding="12"
+                                        Margin="20,0,0,0" />
                             </StackPanel>
 
-                            <!-- Playlists list (visible when not editing) -->
+                            <!-- список плейлистов -->
+
                             <DataGrid Grid.Column="0" Grid.Row="1"
                                       Grid.ColumnSpan="{Binding PlaylistsVm.SelectedPlaylist, Converter={StaticResource NullToColumnSpanConverter}}"
                                       ItemsSource="{Binding PlaylistsVm.PlaylistsEx}"
@@ -294,13 +340,14 @@
                                       BorderBrush="{StaticResource BorderBrush}"
                                       BorderThickness="1">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" />
-                                    <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2*" />
-                                    <DataGridTextColumn Header="Tracks" Binding="{Binding TrackCount}" Width="120" />
+                                    <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" />
+                                    <DataGridTextColumn Header="Описание" Binding="{Binding Description}" Width="2*" />
+                                    <DataGridTextColumn Header="Треки" Binding="{Binding TrackCount}" Width="120" />
                                 </DataGrid.Columns>
                             </DataGrid>
 
-                            <!-- Library tracks (visible when editing) -->
+                            <!-- библиотека треков (видна при редактировании) -->
+
                             <DataGrid Grid.Column="0" Grid.Row="1"
                                       Grid.ColumnSpan="{Binding PlaylistsVm.SelectedPlaylist, Converter={StaticResource NullToColumnSpanConverter}}"
                                       ItemsSource="{Binding Tracks}"
@@ -318,26 +365,33 @@
                                       BorderBrush="{StaticResource BorderBrush}"
                                       BorderThickness="1">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="2*" />
-                                    <DataGridTextColumn Header="Genre" Binding="{Binding Genre}" Width="140" />
-                                    <DataGridTextColumn Header="Duration" Binding="{Binding Duration, Converter={StaticResource DurationConverter}}" Width="110" />
+                                    <DataGridTextColumn Header="Название" Binding="{Binding Title}" Width="2*" />
+                                    <DataGridTextColumn Header="Жанр" Binding="{Binding Genre}" Width="140" />
+                                    <DataGridTextColumn Header="Длина"
+                                                        Binding="{Binding Duration, Converter={StaticResource DurationConverter}}"
+                                                        Width="110" />
                                 </DataGrid.Columns>
                             </DataGrid>
 
-                            <!-- Add/Remove buttons (visible when editing) -->
-                            <StackPanel Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" IsVisible="{Binding PlaylistsVm.IsEditing}"
+                            <!-- кнопки изменения содержимого плейлиста -->
+
+                            <StackPanel Grid.Column="1" Grid.Row="1" VerticalAlignment="Center"
+                                        IsVisible="{Binding PlaylistsVm.IsEditing}"
                                         Margin="0,0,0,8">
-                                <Button Content="→" Command="{Binding PlaylistsVm.AddTrackToPlaylistCommand}" Margin="6" Width="44" Height="36" />
-                                <Button Content="←" Command="{Binding PlaylistsVm.RemoveTrackFromPlaylistCommand}" Margin="6" Width="44" Height="36" />
+                                <Button Content="→" Command="{Binding PlaylistsVm.AddTrackToPlaylistCommand}"
+                                        Margin="6" Width="44" Height="44" />
+                                <Button Content="←" Command="{Binding PlaylistsVm.RemoveTrackFromPlaylistCommand}"
+                                        Margin="6" Width="44" Height="44" />
                             </StackPanel>
-                            
+
                             <Grid Grid.Column="2" Grid.Row="1"
                                   RowDefinitions="Auto,*"
                                   Margin="20,0,0,0"
                                   IsVisible="{Binding PlaylistsVm.SelectedPlaylist,
                                   Converter={StaticResource NullToBoolConverter}}">
 
-                                <!-- Заголовок + кнопки -->
+                                <!-- заголовок + кнопки редактирования и запуска аудиоплеера -->
+
                                 <Grid Grid.Row="0" ColumnDefinitions="Auto,1*,Auto,Auto" VerticalAlignment="Center">
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
                                         <TextBlock Text="{Binding PlaylistsVm.SelectedPlaylistDisplay.Name}"
@@ -353,13 +407,13 @@
                                                 Orientation="Horizontal"
                                                 HorizontalAlignment="Right"
                                                 Spacing="8">
-                                        <Button Content="Edit"
+                                        <Button Content="Изменить"
                                                 Command="{Binding PlaylistsVm.EnterEditModeCommand}"
                                                 IsVisible="{Binding PlaylistsVm.IsEditing, Converter={StaticResource BoolInverseConverter}}" />
-                                        <Button Content="Apply"
+                                        <Button Content="Применить"
                                                 Command="{Binding PlaylistsVm.ApplyEditCommand}"
                                                 IsVisible="{Binding PlaylistsVm.IsEditing}" />
-                                        <Button Content="Cancel"
+                                        <Button Content="Отменить"
                                                 Command="{Binding PlaylistsVm.CancelEditCommand}"
                                                 IsVisible="{Binding PlaylistsVm.IsEditing}" />
                                     </StackPanel>
@@ -379,7 +433,8 @@
                                             HorizontalAlignment="Right" />
                                 </Grid>
 
-                                <!-- Треки выбранного плейлиста -->
+                                <!-- треки выбранного плейлиста -->
+
                                 <DataGrid Grid.Row="1"
                                           ItemsSource="{Binding PlaylistsVm.PlaylistTracks}"
                                           SelectedItem="{Binding PlaylistsVm.SelectedTrackInPlaylist, Mode=TwoWay}"
@@ -392,10 +447,10 @@
                                           BorderBrush="{StaticResource BorderBrush}"
                                           BorderThickness="1">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="*" />
-                                        <DataGridTextColumn Header="Artist" Binding="{Binding Album.Artist.Name }" />
-                                        <DataGridTextColumn Header="Genre" Binding="{Binding Genre}" Width="140" />
-                                        <DataGridTextColumn Header="Duration"
+                                        <DataGridTextColumn Header="Название" Binding="{Binding Title}" Width="*" />
+                                        <DataGridTextColumn Header="Исполнитель" Binding="{Binding Album.Artist.Name }" />
+                                        <DataGridTextColumn Header="Жанр" Binding="{Binding Genre}" Width="140" />
+                                        <DataGridTextColumn Header="Продолжительность"
                                                             Binding="{Binding Duration, Converter={StaticResource DurationConverter}}"
                                                             Width="110" />
                                     </DataGrid.Columns>
@@ -406,16 +461,21 @@
                 </Grid>
             </Grid>
         </Grid>
-        
+
         <!-- мини плеер -->
+
         <Border Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
                 Background="{StaticResource SurfaceBrush}"
                 BorderThickness="0,1,0,0"
                 BorderBrush="{StaticResource BorderBrush}"
                 Padding="10,6"
                 IsVisible="{Binding MiniPlayer.IsVisible}">
-            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                <!-- Кнопки -->
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  RowDefinitions="Auto,Auto"
+                  VerticalAlignment="Center">
+
+                <!-- кнопки -->
+
                 <StackPanel Orientation="Horizontal" Spacing="8" Grid.Column="0">
                     <Button Content="⏮"
                             Command="{Binding MiniPlayer.PreviousCommand}" />
@@ -427,8 +487,9 @@
                             Command="{Binding MiniPlayer.NextCommand}" />
                 </StackPanel>
 
-                <!-- Информация о треке -->
-                <StackPanel Grid.Column="1"
+                <!-- информация о треке -->
+
+                <StackPanel Grid.Row="0" Grid.Column="1"
                             Orientation="Vertical"
                             Margin="16,0"
                             VerticalAlignment="Center">
@@ -441,8 +502,15 @@
                                FontSize="12" />
                 </StackPanel>
 
-                <!-- Место под прогресс-бар, если захочешь -->
-                <!--<Slider Grid.Column="2" Minimum="0" Maximum="100" />-->
+                <Slider Grid.Row="1"
+                        Grid.ColumnSpan="3" Grid.Column="0"
+                        Minimum="0"
+                        Maximum="{Binding MiniPlayer.DurationSeconds}"
+                        Value="{Binding MiniPlayer.SliderPosition, Mode=OneWay}"
+                        IsEnabled="False"
+                        PointerPressed="MiniPlayerSeek_Start"
+                        PointerReleased="MiniPlayerSeek_End"
+                        Margin="8,4,8,0" />
             </Grid>
         </Border>
     </Grid>

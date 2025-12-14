@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,32 +20,32 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ArtistsViewModel ArtistsVm { get; }
     public PlaylistsViewModel PlaylistsVm { get; }
     public MiniPlayerViewModel MiniPlayer { get; }
-    
-    private string _title = "TuneShelf – Music Library";
+
+    private string _title = "TuneShelf – Музыкальная библиотека";
     private int _newTrackDurationSeconds = 0;
     private decimal _newTrackRating = 0m;
-    
+
     private Track? _selectedTrack = null;
     private string _editTrackTitle = string.Empty;
     private string _editTrackGenre = string.Empty;
     private int _editTrackDurationSeconds;
     private decimal _editTrackRating;
-    
+
     private readonly List<Track> _allTracks = new();
     private string _searchQuery = string.Empty;
 
-    private int _selectedTabIndex = 0;
-    
+    private int _selectedTabIndex;
+
     private decimal? _minRating;
     private decimal? _maxRating;
     private string? _selectedGenreFilter;
-    
+
     private Album? _selectedAlbum;
     private bool _showOnlySelectedAlbumTracks;
-    
+
     private int _currentTrackIndex = -1;
 
-    
+
     public string Title
     {
         get => _title;
@@ -68,7 +67,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-    
+
     public Track? SelectedTrack
     {
         get => _selectedTrack;
@@ -85,14 +84,14 @@ public sealed class MainWindowViewModel : ViewModelBase
                 EditTrackDurationSeconds = _selectedTrack.Duration;
                 EditTrackRating = _selectedTrack.Rating;
             }
-            
+
             ((RelayCommand)UpdateTrackCommand).RaiseCanExecuteChanged();
             ((RelayCommand)DeleteTrackCommand).RaiseCanExecuteChanged();
             ((RelayCommand)PlayPlaylistTrackCommand).RaiseCanExecuteChanged();
             ((RelayCommand)PlaySelectedTrackCommand).RaiseCanExecuteChanged();
         }
     }
-    
+
     public string EditTrackTitle
     {
         get => _editTrackTitle;
@@ -137,7 +136,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-    
+
     public string SearchQuery
     {
         get => _searchQuery;
@@ -149,7 +148,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             ApplyFilter();
         }
     }
-    
+
     public decimal? MinRating
     {
         get => _minRating;
@@ -173,7 +172,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             ApplyFilter();
         }
     }
-    
+
     public string? SelectedGenreFilter
     {
         get => _selectedGenreFilter;
@@ -197,7 +196,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             ApplyFilter();
         }
     }
-    
+
     public bool ShowOnlySelectedAlbumTracks
     {
         get => _showOnlySelectedAlbumTracks;
@@ -209,7 +208,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             ApplyFilter();
         }
     }
-    
+
     public int CurrentTrackIndex
     {
         get => _currentTrackIndex;
@@ -222,7 +221,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             ((RelayCommand)PlayPreviousTrackCommand).RaiseCanExecuteChanged();
         }
     }
-    
+
     public IReadOnlyList<string> AvailableGenres =>
         _allTracks.Select(t => t.Genre)
             .Distinct()
@@ -235,21 +234,21 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand AddTrackCommand { get; }
     public ICommand UpdateTrackCommand { get; }
     public ICommand DeleteTrackCommand { get; }
-    
+
     public ICommand NavigateToTracksCommand { get; }
     public ICommand NavigateToAlbumsCommand { get; }
     public ICommand NavigateToArtistsCommand { get; }
     public ICommand NavigateToPlaylistsCommand { get; }
-    
+
     public ICommand RefreshAllCommand { get; }
-    
+
     public ICommand PlaySelectedTrackCommand { get; }
     public ICommand PlayNextTrackCommand { get; }
     public ICommand PlayPreviousTrackCommand { get; }
     public ICommand PausePlaybackCommand { get; }
     public ICommand StopPlaybackCommand { get; }
     public ICommand PlayPlaylistTrackCommand { get; }
-    
+
     public MainWindowViewModel()
     {
         _libraryService = new LibraryService();
@@ -259,9 +258,9 @@ public sealed class MainWindowViewModel : ViewModelBase
         AlbumsVm = new AlbumsViewModel(_libraryService, _dialogService, ArtistsVm);
         MiniPlayer = new MiniPlayerViewModel(_audioService);
         PlaylistsVm = new PlaylistsViewModel(_libraryService, _dialogService, MiniPlayer);
-        
+
         _audioService.StateChanged += (_, _) => OnAudioStateChanged();
-        
+
         AlbumsVm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(AlbumsVm.SelectedAlbum))
@@ -269,14 +268,13 @@ public sealed class MainWindowViewModel : ViewModelBase
                 SelectedAlbum = AlbumsVm.SelectedAlbum;
             }
         };
-        
-        AddTrackCommand = new RelayCommand(
-            async _ => await AddTrackAsync());
+
+        AddTrackCommand = new RelayCommand(async _ => await AddTrackAsync());
 
         UpdateTrackCommand = new RelayCommand(
             async _ => await UpdateSelectedTrackAsync(),
             _ => SelectedTrack is not null && !string.IsNullOrWhiteSpace(EditTrackTitle));
-        
+
         DeleteTrackCommand = new RelayCommand(
             async _ => await DeleteSelectedTrackAsync(),
             _ => SelectedTrack is not null);
@@ -291,34 +289,33 @@ public sealed class MainWindowViewModel : ViewModelBase
             await ArtistsVm.LoadArtistsAsync();
             await PlaylistsVm.LoadPlaylistsAsync();
         });
-        
+
         PlaySelectedTrackCommand = new RelayCommand(
             async _ => await PlaySelectedTrackAsync(),
             _ => SelectedTrack is not null &&
                  !string.IsNullOrWhiteSpace(SelectedTrack.FilePath));
-        
-        PlayNextTrackCommand     = new RelayCommand(async _ => await PlayNextAsync(),     _ => CanMoveNext());
+
+        PlayNextTrackCommand = new RelayCommand(async _ => await PlayNextAsync(), _ => CanMoveNext());
         PlayPreviousTrackCommand = new RelayCommand(async _ => await PlayPreviousAsync(), _ => CanMovePrevious());
 
         PausePlaybackCommand = new RelayCommand(_ => _audioService.Pause());
 
         StopPlaybackCommand = new RelayCommand(
-            _ => _audioService.Stop(),
+            _ => MiniPlayer.OnStoppedFromOutside(),
             _ => _audioService.State is PlaybackState.Playing or PlaybackState.Paused);
-        
+
         PlayPlaylistTrackCommand = new RelayCommand(
             async _ => await PlayPlaylistTrackAsync(),
             _ => PlaylistsVm.SelectedTrackInPlaylist is not null &&
                  !string.IsNullOrWhiteSpace(PlaylistsVm.SelectedTrackInPlaylist.FilePath));
-        
+
         PlaylistsVm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(PlaylistsViewModel.SelectedTrackInPlaylist))
                 ((RelayCommand)PlayPlaylistTrackCommand).RaiseCanExecuteChanged();
         };
-        
-        
-        
+
+
         LoadTracks();
         _ = AlbumsVm.LoadAsync();
         _ = ArtistsVm.LoadArtistsAsync();
@@ -341,8 +338,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void UpdateTitle()
     {
         Title = Tracks.Count == 0
-            ? "TuneShelf – Music Library (empty)"
-            : $"TuneShelf – Music Library ({Tracks.Count} tracks)";
+            ? "TuneShelf – Музыкальная библиотека (пусто)"
+            : $"TuneShelf – Музыкальная библиотека ({Tracks.Count} треков)";
     }
 
     private async Task AddTrackAsync()
@@ -387,7 +384,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         ApplyFilter();
     }
-    
+
     private async Task DeleteSelectedTrackAsync()
     {
         if (SelectedTrack is null) return;
@@ -395,13 +392,13 @@ public sealed class MainWindowViewModel : ViewModelBase
         var id = SelectedTrack.Id;
 
         await _libraryService.DeleteTrackAsync(id);
-        
+
         _allTracks.RemoveAll(t => t.Id == id);
         ApplyFilter();
-        
+
         SelectedTrack = null;
     }
-    
+
     private async Task PlaySelectedTrackAsync()
     {
         if (SelectedTrack is null || string.IsNullOrWhiteSpace(SelectedTrack.FilePath))
@@ -409,7 +406,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         await MiniPlayer.StartFromAsync(Tracks.ToList(), SelectedTrack, playlist: null);
     }
-    
+
     public async Task PlayPlaylistTrackAsync()
     {
         if (PlaylistsVm.SelectedTrackInPlaylist is null) return;
@@ -428,7 +425,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         return Tracks.Count > 0 && CurrentTrackIndex > 0;
     }
-    
+
     private async Task PlayNextAsync()
     {
         if (!CanMoveNext()) return;
@@ -452,13 +449,13 @@ public sealed class MainWindowViewModel : ViewModelBase
         await _audioService.SwitchTrackAsync(prev.FilePath);
         SelectedTrack = prev;
     }
-    
+
     private void OnAudioStateChanged()
     {
         ((RelayCommand)StopPlaybackCommand).RaiseCanExecuteChanged();
     }
-    
-    
+
+
     private void ApplyFilter()
     {
         Tracks.Clear();
@@ -494,7 +491,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             filtered = filtered.Where(t => t.AlbumId == SelectedAlbum.Id);
         }
-        
+
         foreach (var track in filtered)
             Tracks.Add(track);
 

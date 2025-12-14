@@ -10,6 +10,6 @@ public sealed record Album
     public required int Year { get; init; }
     public required Guid ArtistId { get; init; }
     
-    public Artist? Artist { get; init; }         // <‑‑ навигация
+    public Artist? Artist { get; init; }
     public ICollection<Track> Tracks { get; init; } = new List<Track>();
 }

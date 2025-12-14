@@ -19,18 +19,19 @@ public sealed class PlaylistsViewModel : ViewModelBase
 
     private readonly List<Playlist> _allPlaylists = new();
     public ObservableCollection<Playlist> Playlists { get; } = new();
-    
+
     public sealed record PlaylistDisplay(Playlist Playlist, int TrackCount)
     {
         public Guid Id => Playlist.Id;
         public string Name => Playlist.Name;
-        public string Description => Playlist.Description ?? string.Empty;
+        public string Description => Playlist.Description;
         public int TrackCount { get; } = TrackCount;
     }
 
     public ObservableCollection<PlaylistDisplay> PlaylistsEx { get; } = new();
 
     private PlaylistDisplay? _selectedPlaylistDisplay;
+
     public PlaylistDisplay? SelectedPlaylistDisplay
     {
         get => _selectedPlaylistDisplay;
@@ -51,6 +52,7 @@ public sealed class PlaylistsViewModel : ViewModelBase
     }
 
     private Playlist? _selectedPlaylist;
+
     public Playlist? SelectedPlaylist
     {
         get => _selectedPlaylist;
@@ -114,6 +116,7 @@ public sealed class PlaylistsViewModel : ViewModelBase
     public ObservableCollection<Track> PlaylistTracks { get; } = new();
 
     private Track? _selectedTrackInLibrary;
+
     public Track? SelectedTrackInLibrary
     {
         get => _selectedTrackInLibrary;
@@ -127,6 +130,7 @@ public sealed class PlaylistsViewModel : ViewModelBase
     }
 
     private Track? _selectedTrackInPlaylist;
+
     public Track? SelectedTrackInPlaylist
     {
         get => _selectedTrackInPlaylist;
@@ -149,10 +153,11 @@ public sealed class PlaylistsViewModel : ViewModelBase
     public ICommand EnterEditModeCommand { get; }
     public ICommand ApplyEditCommand { get; }
     public ICommand CancelEditCommand { get; }
-    
+
     public ICommand PlaySelectedInPlaylistCommand { get; }
-    
-    public PlaylistsViewModel(LibraryService libraryService, IDialogService dialogService, MiniPlayerViewModel miniPlayer)
+
+    public PlaylistsViewModel(LibraryService libraryService, IDialogService dialogService,
+        MiniPlayerViewModel miniPlayer)
     {
         _libraryService = libraryService;
         _dialogService = dialogService;
@@ -161,7 +166,8 @@ public sealed class PlaylistsViewModel : ViewModelBase
         LoadPlaylistsCommand = new RelayCommand(async _ => await LoadPlaylistsAsync());
         CreatePlaylistCommand = new RelayCommand(async _ => await CreatePlaylistAsync());
         EditPlaylistCommand = new RelayCommand(async _ => await EditPlaylistAsync(), _ => SelectedPlaylist is not null);
-        DeletePlaylistCommand = new RelayCommand(async _ => await DeletePlaylistAsync(), _ => SelectedPlaylist is not null);
+        DeletePlaylistCommand =
+            new RelayCommand(async _ => await DeletePlaylistAsync(), _ => SelectedPlaylist is not null);
 
         AddTrackToPlaylistCommand = new RelayCommand(
             async _ => await AddSelectedTrackAsync(),
@@ -172,12 +178,12 @@ public sealed class PlaylistsViewModel : ViewModelBase
             _ => SelectedPlaylist is not null && SelectedTrackInPlaylist is not null);
 
         EnterEditModeCommand = new RelayCommand(_ => EnterEditMode(), _ => SelectedPlaylist is not null && !IsEditing);
-        ApplyEditCommand = new RelayCommand(async _ => await ApplyEditAsync(), _ => IsEditing && !string.IsNullOrWhiteSpace(EditedName));
+        ApplyEditCommand = new RelayCommand(async _ => await ApplyEditAsync(),
+            _ => IsEditing && !string.IsNullOrWhiteSpace(EditedName));
         CancelEditCommand = new RelayCommand(_ => CancelEdit(), _ => IsEditing);
-        
+
         PlaySelectedInPlaylistCommand = new RelayCommand(async _ => await PlaySelectedInPlaylistAsync(),
             _ => SelectedTrackInPlaylist is not null);
-        
     }
 
     public async Task LoadPlaylistsAsync()
@@ -195,7 +201,7 @@ public sealed class PlaylistsViewModel : ViewModelBase
             var tracks = await _libraryService.GetTracksForPlaylistAsync(p.Id);
             PlaylistsEx.Add(new PlaylistDisplay(p, tracks.Count));
         }
-        
+
         SelectedPlaylistDisplay = null;
     }
 
@@ -279,9 +285,9 @@ public sealed class PlaylistsViewModel : ViewModelBase
     private void EnterEditMode()
     {
         if (SelectedPlaylist is null) return;
-        EditedName        = SelectedPlaylist.Name;
-        EditedDescription = SelectedPlaylist.Description ?? string.Empty;
-        IsEditing         = true;
+        EditedName = SelectedPlaylist.Name;
+        EditedDescription = SelectedPlaylist.Description;
+        IsEditing = true;
     }
 
     private void CancelEdit()
@@ -296,7 +302,7 @@ public sealed class PlaylistsViewModel : ViewModelBase
         var updated = SelectedPlaylist with
         {
             Name = EditedName.Trim(),
-            Description = string.IsNullOrWhiteSpace(EditedDescription) ? null : EditedDescription.Trim()
+            Description = EditedDescription.Trim()
         };
 
         await _libraryService.UpdatePlaylistAsync(updated);
@@ -314,7 +320,7 @@ public sealed class PlaylistsViewModel : ViewModelBase
             PlaylistsEx[exIdx] = new PlaylistDisplay(updated, oldCount);
         }
 
-        SelectedPlaylist        = updated;
+        SelectedPlaylist = updated;
         SelectedPlaylistDisplay = PlaylistsEx.FirstOrDefault(p => p.Id == updated.Id);
 
         IsEditing = false;

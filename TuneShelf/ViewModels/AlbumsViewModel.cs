@@ -15,21 +15,24 @@ public sealed class AlbumsViewModel : ViewModelBase
 {
     private readonly LibraryService _libraryService;
     private readonly IDialogService _dialogService;
-    
+
     public ArtistsViewModel ArtistsVm { get; }
-    
+
     public ObservableCollection<Album> Albums { get; } = new();
-    public sealed record AlbumDisplay(Album Album, string ArtistName)
+
+    public sealed record AlbumDisplay(Album Album, string ArtistName, int TrackCount)
     {
         public Guid Id => Album.Id;
         public string Title => Album.Title;
         public int Year => Album.Year;
         public string ArtistName { get; } = ArtistName;
+        public int TrackCount { get; } = TrackCount;
     }
 
     public ObservableCollection<AlbumDisplay> AlbumsEx { get; } = new();
 
     private AlbumDisplay? _selectedAlbumDisplay;
+
     public AlbumDisplay? SelectedAlbumDisplay
     {
         get => _selectedAlbumDisplay;
@@ -43,13 +46,14 @@ public sealed class AlbumsViewModel : ViewModelBase
             ((RelayCommand)DeleteAlbumCommand).RaiseCanExecuteChanged();
         }
     }
+
     private Album? _selectedAlbum;
     private readonly List<Album> _allAlbums = new();
     private string _albumSearchQuery = string.Empty;
 
     private Artist? _selectedArtist;
     private bool _showOnlySelectedArtistAlbums;
-    
+
     public Album? SelectedAlbum
     {
         get => _selectedAlbum;
@@ -62,7 +66,7 @@ public sealed class AlbumsViewModel : ViewModelBase
             ((RelayCommand)DeleteAlbumCommand).RaiseCanExecuteChanged();
         }
     }
-    
+
     public string AlbumSearchQuery
     {
         get => _albumSearchQuery;
@@ -81,12 +85,12 @@ public sealed class AlbumsViewModel : ViewModelBase
         set
         {
             if (_selectedArtist == value) return;
-            _selectedArtist = value;  
+            _selectedArtist = value;
             OnPropertyChanged();
             ApplyFilter();
         }
     }
-    
+
     public bool ShowOnlySelectedArtistAlbums
     {
         get => _showOnlySelectedArtistAlbums;
@@ -99,11 +103,11 @@ public sealed class AlbumsViewModel : ViewModelBase
         }
     }
 
-    public ICommand LoadAlbumsCommand  { get; }
+    public ICommand LoadAlbumsCommand { get; }
     public ICommand CreateAlbumCommand { get; }
-    public ICommand EditAlbumCommand   { get; }
+    public ICommand EditAlbumCommand { get; }
     public ICommand DeleteAlbumCommand { get; }
-    
+
 
     public AlbumsViewModel(LibraryService libraryService, IDialogService dialogService, ArtistsViewModel artistsVm)
     {
@@ -111,7 +115,7 @@ public sealed class AlbumsViewModel : ViewModelBase
         _dialogService = dialogService;
 
         ArtistsVm = artistsVm;
-        
+
         SelectedArtist = ArtistsVm.SelectedArtist;
 
         ArtistsVm.PropertyChanged += (_, e) =>
@@ -121,10 +125,10 @@ public sealed class AlbumsViewModel : ViewModelBase
                 SelectedArtist = ArtistsVm.SelectedArtist;
             }
         };
-        
-        LoadAlbumsCommand  = new RelayCommand(async _ => await LoadAsync());
+
+        LoadAlbumsCommand = new RelayCommand(async _ => await LoadAsync());
         CreateAlbumCommand = new RelayCommand(async _ => await CreateAsync());
-        EditAlbumCommand   = new RelayCommand(async _ => await EditAsync(),   _ => SelectedAlbum is not null);
+        EditAlbumCommand = new RelayCommand(async _ => await EditAsync(), _ => SelectedAlbum is not null);
         DeleteAlbumCommand = new RelayCommand(async _ => await DeleteAsync(), _ => SelectedAlbum is not null);
     }
 
@@ -143,7 +147,7 @@ public sealed class AlbumsViewModel : ViewModelBase
         AlbumsEx.Clear();
         foreach (var a in albums)
         {
-            AlbumsEx.Add(new AlbumDisplay(a, artistDict.TryGetValue(a.ArtistId, out var n) ? n : "Unknown"));
+            AlbumsEx.Add(new AlbumDisplay(a, artistDict.TryGetValue(a.ArtistId, out var n) ? n : "Неизвестный исполнитель", a.Tracks?.Count ?? 0));
             Albums.Add(a);
         }
 
@@ -159,13 +163,13 @@ public sealed class AlbumsViewModel : ViewModelBase
                 "Сначала создайте хотя бы одного исполнителя.");
             return;
         }
-        
+
         var edited = await _dialogService.ShowAlbumEditorAsync(null, artists);
         if (edited is null) return;
 
         var created = await _libraryService.CreateAlbumAsync(edited);
         Albums.Add(created);
-        
+
         ApplyFilter();
     }
 
@@ -175,7 +179,7 @@ public sealed class AlbumsViewModel : ViewModelBase
 
         var artists = await _libraryService.GetAllArtistsAsync();
         if (artists.Count == 0) return;
-        
+
         var edited = await _dialogService.ShowAlbumEditorAsync(SelectedAlbum, artists);
         if (edited is null) return;
 
@@ -184,7 +188,7 @@ public sealed class AlbumsViewModel : ViewModelBase
         var idx = Albums.IndexOf(SelectedAlbum);
         Albums[idx] = edited;
         SelectedAlbum = edited;
-        
+
         ApplyFilter();
     }
 
@@ -200,11 +204,11 @@ public sealed class AlbumsViewModel : ViewModelBase
                 "Нельзя удалить альбом: у него есть треки.");
             return;
         }
-        
+
         _allAlbums.RemoveAll(a => a.Id == SelectedAlbum.Id);
         ApplyFilter();
     }
-    
+
     private void ApplyFilter()
     {
         var previous = SelectedAlbum;
@@ -236,7 +240,7 @@ public sealed class AlbumsViewModel : ViewModelBase
         foreach (var album in filtered)
         {
             Albums.Add(album);
-            AlbumsEx.Add(new AlbumDisplay(album, artistDict.TryGetValue(album.ArtistId, out var n) ? n : "Unknown"));
+            AlbumsEx.Add(new AlbumDisplay(album, artistDict.TryGetValue(album.ArtistId, out var n) ? n : "Неизвестный исполнитель", album.Tracks?.Count ?? 0));
         }
 
         if (previous is not null)
@@ -248,6 +252,4 @@ public sealed class AlbumsViewModel : ViewModelBase
                 SelectedAlbum = null;
         }
     }
-
-
 }
