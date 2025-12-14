@@ -13,8 +13,11 @@ public sealed class LibraryService
     public async Task<List<Track>> GetAllTracksAsync()
     {
         await using var db = new TuneShelfDbContext();
+
         return await db.Tracks
-            .AsNoTracking()
+            .Include(t => t.Album)
+                .ThenInclude(a => a.Artist)
+            .OrderBy(t => t.Title)
             .ToListAsync();
     }
 
@@ -226,11 +229,15 @@ public sealed class LibraryService
         await using var db = new TuneShelfDbContext();
 
         return await db.PlaylistTracks
-            .Where(pt => pt.PlaylistId == playlistId && pt.Track != null)
-            .Select(pt => pt.Track!)
+            .Where(pt => pt.PlaylistId == playlistId)
+            .Include(pt => pt.Track)                    // грузим Track
+            .ThenInclude(t => t.Album)             // грузим Album
+            .ThenInclude(a => a.Artist)        // грузим Artist
+            .Select(pt => pt.Track!)                   // вытаскиваем сам Track
             .OrderBy(t => t.Title)
             .ToListAsync();
     }
+
 
 
 

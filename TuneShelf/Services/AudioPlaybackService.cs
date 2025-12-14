@@ -1,133 +1,95 @@
 using System;
-using System.IO;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using SoundFlow.Abstracts.Devices;
-using SoundFlow.Backends.MiniAudio;
-using SoundFlow.Components;
-using SoundFlow.Interfaces;
-using SoundFlow.Providers;
-using SoundFlow.Structs;
+using NAudio.Wave;
+
+public enum PlaybackState
+{
+    Stopped,
+    Playing,
+    Paused
+}
 
 public sealed class AudioPlaybackService : IAsyncDisposable
 {
-    private readonly MiniAudioEngine _engine;
-    private readonly AudioPlaybackDevice _device;
-    private SoundPlayer? _player;
-    private ISoundDataProvider? _provider;
-    private FileStream? _currentStream;
-    private bool _disposed;
-    private readonly SemaphoreSlim _lock = new(1, 1);
+    private IWavePlayer? _output;
+    private AudioFileReader? _reader;
 
-    public AudioPlaybackService()
+    public PlaybackState State { get; private set; } = PlaybackState.Stopped;
+    public string? CurrentFilePath { get; private set; }
+
+    public event EventHandler? StateChanged;
+
+    private void SetState(PlaybackState newState)
     {
-        _engine = new MiniAudioEngine();
-        var format = AudioFormat.Dvd;
-        var defaultDevice = _engine.PlaybackDevices.FirstOrDefault(d => d.IsDefault);
-        _device = _engine.InitializePlaybackDevice(defaultDevice, format);
-        _device.Start();
+        if (State == newState) return;
+        State = newState;
+        StateChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public async Task PlayFileAsync(string path)
+    public async Task PlayAsync(string path)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(AudioPlaybackService));
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
+        if (string.IsNullOrWhiteSpace(path))
+            return;
 
-        await _lock.WaitAsync();
-        try
+        if (State == PlaybackState.Paused &&
+            string.Equals(path, CurrentFilePath, StringComparison.OrdinalIgnoreCase))
         {
-            // Полная очистка старого состояния
-            if (_player != null)
-            {
-                _player.Stop();
-                await Task.Delay(100);
-                _device.MasterMixer.RemoveComponent(_player);
-                _player.Dispose();
-                _player = null;
-            }
+            _output?.Play();
+            SetState(PlaybackState.Playing);
+            return;
+        }
 
-            _provider?.Dispose();
-            _currentStream?.Dispose();
+        Cleanup();
 
-            // Создаём новый плеер
-            _currentStream = File.OpenRead(path);
-            _provider = new StreamDataProvider(_engine, _device.Format, _currentStream);
-            _player = new SoundPlayer(_engine, _device.Format, _provider);
-            
-            _device.MasterMixer.AddComponent(_player);
-            await Task.Delay(50);
-            _player.Play();
-        }
-        catch
-        {
-            _currentStream?.Dispose();
-            _provider?.Dispose();
-            _player?.Dispose();
-            _currentStream = null;
-            _provider = null;
-            _player = null;
-            throw;
-        }
-        finally
-        {
-            _lock.Release();
-        }
+        CurrentFilePath = path;
+        _reader = new AudioFileReader(path);
+        _output = new WaveOutEvent();
+        _output.Init(_reader);
+        _output.Play();
+        SetState(PlaybackState.Playing);
+
+        await Task.CompletedTask;
     }
 
-    // ← ДОБАВЛЯЕМ Stop() для MainWindowViewModel
+    public void Pause()
+    {
+        if (State != PlaybackState.Playing || _output is null)
+            return;
+
+        _output.Pause();
+        SetState(PlaybackState.Paused);
+    }
+
     public void Stop()
     {
-        _lock.Wait();
-        try
-        {
-            _player?.Stop();
-        }
-        finally
-        {
-            _lock.Release();
-        }
+        if (_output is null && State == PlaybackState.Stopped)
+            return;
+
+        _output?.Stop();
+        SetState(PlaybackState.Stopped);
     }
 
-    public async Task StopAsync()
+    public async Task SwitchTrackAsync(string newPath)
     {
-        await _lock.WaitAsync();
-        try
-        {
-            _player?.Stop();
-        }
-        finally
-        {
-            _lock.Release();
-        }
+        Stop();
+        Cleanup();
+        await PlayAsync(newPath);
+    }
+
+    private void Cleanup()
+    {
+        _output?.Stop();
+        _output?.Dispose();
+        _reader?.Dispose();
+
+        _output = null;
+        _reader = null;
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_disposed) return;
-        _disposed = true;
-
-        await _lock.WaitAsync();
-        try
-        {
-            _player?.Stop();
-            if (_player != null)
-            {
-                _device.MasterMixer.RemoveComponent(_player);
-                _player.Dispose();
-            }
-            
-            _provider?.Dispose();
-            _currentStream?.Dispose();
-            
-            _device.Stop();
-            _device.Dispose();
-            _engine.Dispose();
-        }
-        finally
-        {
-            _lock.Release();
-            _lock.Dispose();
-        }
+        Stop();
+        Cleanup();
+        await Task.CompletedTask;
     }
 }

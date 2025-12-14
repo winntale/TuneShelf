@@ -13,5 +13,7 @@ public sealed record Track
     public required Guid AlbumId { get; init; }
     
     public string FilePath { get; init; } = string.Empty;
+    
+    public Album? Album { get; init; }
     public ICollection<PlaylistTrack> PlaylistTracks { get; set; } = new List<PlaylistTrack>();
 }

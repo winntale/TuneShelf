@@ -28,14 +28,14 @@ public class TuneShelfDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Album>()
-            .HasOne<Artist>()
-            .WithMany()
-            .HasForeignKey(a => a.ArtistId);
+        modelBuilder.Entity<Artist>()
+            .HasMany(a => a.Albums)
+            .WithOne(al => al.Artist)
+            .HasForeignKey(al => al.ArtistId);
 
-        modelBuilder.Entity<Track>()
-            .HasOne<Album>()
-            .WithMany()
+        modelBuilder.Entity<Album>()
+            .HasMany(al => al.Tracks)
+            .WithOne(t => t.Album)
             .HasForeignKey(t => t.AlbumId);
 
         modelBuilder.Entity<PlaylistTrack>()
@@ -51,4 +51,5 @@ public class TuneShelfDbContext : DbContext
             .WithMany(t => t.PlaylistTracks)
             .HasForeignKey(pt => pt.TrackId);
     }
+
 }

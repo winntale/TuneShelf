@@ -608,7 +608,7 @@ public sealed class DialogService : IDialogService
             {
                 Id = playlist?.Id ?? Guid.NewGuid(),
                 Name = nameBox.Text.Trim(),
-                Description = string.IsNullOrWhiteSpace(descBox.Text) ? null : descBox.Text.Trim()
+                Description = string.IsNullOrWhiteSpace(descBox.Text) ? "Без описания" : descBox.Text.Trim()
             };
 
             if (!tcs.Task.IsCompleted) tcs.SetResult(result);

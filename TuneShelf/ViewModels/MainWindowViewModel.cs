@@ -20,10 +20,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     public AlbumsViewModel AlbumsVm { get; }
     public ArtistsViewModel ArtistsVm { get; }
     public PlaylistsViewModel PlaylistsVm { get; }
+    public MiniPlayerViewModel MiniPlayer { get; }
     
     private string _title = "TuneShelf – Music Library";
-    private string _newTrackTitle = string.Empty;
-    private string _newTrackGenre = string.Empty;
     private int _newTrackDurationSeconds = 0;
     private decimal _newTrackRating = 0m;
     
@@ -45,9 +44,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private Album? _selectedAlbum;
     private bool _showOnlySelectedAlbumTracks;
     
-    //private readonly IMediaPlayer _mediaPlayer;
-
-    
+    private int _currentTrackIndex = -1;
 
     
     public string Title
@@ -71,52 +68,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-
-    public string NewTrackTitle
-    {
-        get => _newTrackTitle;
-        set
-        {
-            if (_newTrackTitle == value) return;
-            _newTrackTitle = value;
-            OnPropertyChanged();
-            ((RelayCommand)AddTrackCommand).RaiseCanExecuteChanged();
-        }
-    }
-
-    public string NewTrackGenre
-    {
-        get => _newTrackGenre;
-        set
-        {
-            if (_newTrackGenre == value) return;
-            _newTrackGenre = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public int NewTrackDurationSeconds
-    {
-        get => _newTrackDurationSeconds;
-        set
-        {
-            if (_newTrackDurationSeconds == value) return;
-            _newTrackDurationSeconds = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public decimal NewTrackRating
-    {
-        get => _newTrackRating;
-        set
-        {
-            if (_newTrackRating == value) return;
-            _newTrackRating = value;
-            OnPropertyChanged();
-        }
-    }
-
+    
     public Track? SelectedTrack
     {
         get => _selectedTrack;
@@ -258,6 +210,19 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
     
+    public int CurrentTrackIndex
+    {
+        get => _currentTrackIndex;
+        private set
+        {
+            if (_currentTrackIndex == value) return;
+            _currentTrackIndex = value;
+            OnPropertyChanged();
+            ((RelayCommand)PlayNextTrackCommand).RaiseCanExecuteChanged();
+            ((RelayCommand)PlayPreviousTrackCommand).RaiseCanExecuteChanged();
+        }
+    }
+    
     public IReadOnlyList<string> AvailableGenres =>
         _allTracks.Select(t => t.Genre)
             .Distinct()
@@ -279,6 +244,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand RefreshAllCommand { get; }
     
     public ICommand PlaySelectedTrackCommand { get; }
+    public ICommand PlayNextTrackCommand { get; }
+    public ICommand PlayPreviousTrackCommand { get; }
+    public ICommand PausePlaybackCommand { get; }
     public ICommand StopPlaybackCommand { get; }
     public ICommand PlayPlaylistTrackCommand { get; }
     
@@ -289,7 +257,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         _audioService = new AudioPlaybackService();
         ArtistsVm = new ArtistsViewModel(_libraryService, _dialogService);
         AlbumsVm = new AlbumsViewModel(_libraryService, _dialogService, ArtistsVm);
-        PlaylistsVm = new PlaylistsViewModel(_libraryService, _dialogService);
+        MiniPlayer = new MiniPlayerViewModel(_audioService);
+        PlaylistsVm = new PlaylistsViewModel(_libraryService, _dialogService, MiniPlayer);
+        
+        _audioService.StateChanged += (_, _) => OnAudioStateChanged();
         
         AlbumsVm.PropertyChanged += (_, e) =>
         {
@@ -325,8 +296,15 @@ public sealed class MainWindowViewModel : ViewModelBase
             async _ => await PlaySelectedTrackAsync(),
             _ => SelectedTrack is not null &&
                  !string.IsNullOrWhiteSpace(SelectedTrack.FilePath));
+        
+        PlayNextTrackCommand     = new RelayCommand(async _ => await PlayNextAsync(),     _ => CanMoveNext());
+        PlayPreviousTrackCommand = new RelayCommand(async _ => await PlayPreviousAsync(), _ => CanMovePrevious());
 
-        StopPlaybackCommand = new RelayCommand(_ => _audioService.Stop());
+        PausePlaybackCommand = new RelayCommand(_ => _audioService.Pause());
+
+        StopPlaybackCommand = new RelayCommand(
+            _ => _audioService.Stop(),
+            _ => _audioService.State is PlaybackState.Playing or PlaybackState.Paused);
         
         PlayPlaylistTrackCommand = new RelayCommand(
             async _ => await PlayPlaylistTrackAsync(),
@@ -338,6 +316,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             if (e.PropertyName == nameof(PlaylistsViewModel.SelectedTrackInPlaylist))
                 ((RelayCommand)PlayPlaylistTrackCommand).RaiseCanExecuteChanged();
         };
+        
+        
         
         LoadTracks();
         _ = AlbumsVm.LoadAsync();
@@ -424,10 +404,10 @@ public sealed class MainWindowViewModel : ViewModelBase
     
     private async Task PlaySelectedTrackAsync()
     {
-        if (SelectedTrack is null) return;
-        if (string.IsNullOrWhiteSpace(SelectedTrack.FilePath)) return;
+        if (SelectedTrack is null || string.IsNullOrWhiteSpace(SelectedTrack.FilePath))
+            return;
 
-        await _audioService.PlayFileAsync(SelectedTrack.FilePath);
+        await MiniPlayer.StartFromAsync(Tracks.ToList(), SelectedTrack, playlist: null);
     }
     
     public async Task PlayPlaylistTrackAsync()
@@ -436,8 +416,48 @@ public sealed class MainWindowViewModel : ViewModelBase
         var track = PlaylistsVm.SelectedTrackInPlaylist;
         if (string.IsNullOrWhiteSpace(track.FilePath)) return;
 
-        await _audioService.PlayFileAsync(track.FilePath);
+        await _audioService.PlayAsync(track.FilePath);
     }
+
+    private bool CanMoveNext()
+    {
+        return Tracks.Count > 0 && CurrentTrackIndex >= 0 && CurrentTrackIndex < Tracks.Count - 1;
+    }
+
+    private bool CanMovePrevious()
+    {
+        return Tracks.Count > 0 && CurrentTrackIndex > 0;
+    }
+    
+    private async Task PlayNextAsync()
+    {
+        if (!CanMoveNext()) return;
+
+        CurrentTrackIndex++;
+        var next = Tracks[CurrentTrackIndex];
+        if (string.IsNullOrWhiteSpace(next.FilePath)) return;
+
+        await _audioService.SwitchTrackAsync(next.FilePath);
+        SelectedTrack = next;
+    }
+
+    private async Task PlayPreviousAsync()
+    {
+        if (!CanMovePrevious()) return;
+
+        CurrentTrackIndex--;
+        var prev = Tracks[CurrentTrackIndex];
+        if (string.IsNullOrWhiteSpace(prev.FilePath)) return;
+
+        await _audioService.SwitchTrackAsync(prev.FilePath);
+        SelectedTrack = prev;
+    }
+    
+    private void OnAudioStateChanged()
+    {
+        ((RelayCommand)StopPlaybackCommand).RaiseCanExecuteChanged();
+    }
+    
     
     private void ApplyFilter()
     {

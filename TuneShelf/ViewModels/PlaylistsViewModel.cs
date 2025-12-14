@@ -15,6 +15,7 @@ public sealed class PlaylistsViewModel : ViewModelBase
 {
     private readonly LibraryService _libraryService;
     private readonly IDialogService _dialogService;
+    private readonly MiniPlayerViewModel _miniPlayer;
 
     private readonly List<Playlist> _allPlaylists = new();
     public ObservableCollection<Playlist> Playlists { get; } = new();
@@ -135,6 +136,7 @@ public sealed class PlaylistsViewModel : ViewModelBase
             _selectedTrackInPlaylist = value;
             OnPropertyChanged();
             ((RelayCommand)RemoveTrackFromPlaylistCommand).RaiseCanExecuteChanged();
+            ((RelayCommand)PlaySelectedInPlaylistCommand).RaiseCanExecuteChanged();
         }
     }
 
@@ -147,11 +149,14 @@ public sealed class PlaylistsViewModel : ViewModelBase
     public ICommand EnterEditModeCommand { get; }
     public ICommand ApplyEditCommand { get; }
     public ICommand CancelEditCommand { get; }
-
-    public PlaylistsViewModel(LibraryService libraryService, IDialogService dialogService)
+    
+    public ICommand PlaySelectedInPlaylistCommand { get; }
+    
+    public PlaylistsViewModel(LibraryService libraryService, IDialogService dialogService, MiniPlayerViewModel miniPlayer)
     {
         _libraryService = libraryService;
-        _dialogService  = dialogService;
+        _dialogService = dialogService;
+        _miniPlayer = miniPlayer;
 
         LoadPlaylistsCommand = new RelayCommand(async _ => await LoadPlaylistsAsync());
         CreatePlaylistCommand = new RelayCommand(async _ => await CreatePlaylistAsync());
@@ -169,6 +174,10 @@ public sealed class PlaylistsViewModel : ViewModelBase
         EnterEditModeCommand = new RelayCommand(_ => EnterEditMode(), _ => SelectedPlaylist is not null && !IsEditing);
         ApplyEditCommand = new RelayCommand(async _ => await ApplyEditAsync(), _ => IsEditing && !string.IsNullOrWhiteSpace(EditedName));
         CancelEditCommand = new RelayCommand(_ => CancelEdit(), _ => IsEditing);
+        
+        PlaySelectedInPlaylistCommand = new RelayCommand(async _ => await PlaySelectedInPlaylistAsync(),
+            _ => SelectedTrackInPlaylist is not null);
+        
     }
 
     public async Task LoadPlaylistsAsync()
@@ -259,6 +268,14 @@ public sealed class PlaylistsViewModel : ViewModelBase
         SelectedPlaylistDisplay = null;
     }
 
+    private async Task PlaySelectedInPlaylistAsync()
+    {
+        if (SelectedTrackInPlaylist is null || string.IsNullOrWhiteSpace(SelectedTrackInPlaylist.FilePath))
+            return;
+
+        await _miniPlayer.StartFromAsync(PlaylistTracks.ToList(), SelectedTrackInPlaylist, SelectedPlaylist);
+    }
+
     private void EnterEditMode()
     {
         if (SelectedPlaylist is null) return;
@@ -278,7 +295,7 @@ public sealed class PlaylistsViewModel : ViewModelBase
 
         var updated = SelectedPlaylist with
         {
-            Name        = EditedName.Trim(),
+            Name = EditedName.Trim(),
             Description = string.IsNullOrWhiteSpace(EditedDescription) ? null : EditedDescription.Trim()
         };
 
